@@ -176,32 +176,239 @@ resource "aws_iam_role_policy" "github_actions" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
+      # Terraform state bucket
       {
+        Sid    = "TerraformState"
         Effect = "Allow"
         Action = [
-          "s3:PutObject",
           "s3:GetObject",
-          "s3:DeleteObject",
+          "s3:PutObject",
           "s3:ListBucket",
         ]
         Resource = [
-          module.storage.web_bucket_arn,
-          "${module.storage.web_bucket_arn}/*",
+          "arn:aws:s3:::colon-terraform-state-${data.aws_caller_identity.current.account_id}",
+          "arn:aws:s3:::colon-terraform-state-${data.aws_caller_identity.current.account_id}/*",
         ]
       },
+      # Terraform state lock (DynamoDB)
       {
+        Sid    = "TerraformLock"
         Effect = "Allow"
         Action = [
-          "cloudfront:CreateInvalidation",
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:DeleteItem",
+        ]
+        Resource = "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/colon-terraform-lock"
+      },
+      # S3 (web / recordings buckets)
+      {
+        Sid    = "S3Management"
+        Effect = "Allow"
+        Action = [
+          "s3:CreateBucket",
+          "s3:DeleteBucket",
+          "s3:GetBucketLocation",
+          "s3:ListAllMyBuckets",
+          "s3:GetBucketPolicy",
+          "s3:PutBucketPolicy",
+          "s3:DeleteBucketPolicy",
+          "s3:GetBucketPublicAccessBlock",
+          "s3:PutBucketPublicAccessBlock",
+          "s3:GetBucketVersioning",
+          "s3:PutBucketVersioning",
+          "s3:GetEncryptionConfiguration",
+          "s3:PutEncryptionConfiguration",
+          "s3:GetLifecycleConfiguration",
+          "s3:PutLifecycleConfiguration",
+          "s3:DeleteLifecycleConfiguration",
+          "s3:GetBucketCORS",
+          "s3:PutBucketCORS",
+          "s3:DeleteBucketCORS",
+          "s3:GetBucketAcl",
+          "s3:PutBucketAcl",
+          "s3:GetBucketTagging",
+          "s3:PutBucketTagging",
+          "s3:GetBucketWebsite",
+          "s3:PutBucketWebsite",
+          "s3:DeleteBucketWebsite",
+          "s3:GetAccelerateConfiguration",
+          "s3:GetBucketRequestPayment",
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject",
+          "s3:ListBucket",
         ]
         Resource = ["*"]
       },
+      # DynamoDB (application tables)
       {
+        Sid    = "DynamoDBManagement"
         Effect = "Allow"
         Action = [
-          "lambda:UpdateFunctionCode",
+          "dynamodb:CreateTable",
+          "dynamodb:DeleteTable",
+          "dynamodb:DescribeTable",
+          "dynamodb:UpdateTable",
+          "dynamodb:TagResource",
+          "dynamodb:UntagResource",
+          "dynamodb:ListTagsOfResource",
+          "dynamodb:DescribeContinuousBackups",
+          "dynamodb:UpdateContinuousBackups",
+          "dynamodb:DescribeTimeToLive",
+          "dynamodb:UpdateTimeToLive",
         ]
-        Resource = [for arn in values(module.api.lambda_function_arns) : arn]
+        Resource = ["*"]
+      },
+      # Lambda
+      {
+        Sid    = "LambdaManagement"
+        Effect = "Allow"
+        Action = [
+          "lambda:CreateFunction",
+          "lambda:DeleteFunction",
+          "lambda:GetFunction",
+          "lambda:UpdateFunctionCode",
+          "lambda:UpdateFunctionConfiguration",
+          "lambda:GetFunctionConfiguration",
+          "lambda:ListFunctions",
+          "lambda:AddPermission",
+          "lambda:RemovePermission",
+          "lambda:GetPolicy",
+          "lambda:TagResource",
+          "lambda:UntagResource",
+          "lambda:ListTags",
+          "lambda:GetFunctionCodeSigningConfig",
+          "lambda:PutFunctionEventInvokeConfig",
+          "lambda:GetFunctionEventInvokeConfig",
+        ]
+        Resource = ["*"]
+      },
+      # IAM (Lambda ロール管理 + OIDC Provider 参照)
+      {
+        Sid    = "IAMManagement"
+        Effect = "Allow"
+        Action = [
+          "iam:CreateRole",
+          "iam:DeleteRole",
+          "iam:GetRole",
+          "iam:UpdateRole",
+          "iam:AttachRolePolicy",
+          "iam:DetachRolePolicy",
+          "iam:PutRolePolicy",
+          "iam:GetRolePolicy",
+          "iam:DeleteRolePolicy",
+          "iam:ListRolePolicies",
+          "iam:ListAttachedRolePolicies",
+          "iam:PassRole",
+          "iam:ListOpenIDConnectProviders",
+          "iam:GetOpenIDConnectProvider",
+          "iam:TagRole",
+          "iam:UntagRole",
+        ]
+        Resource = ["*"]
+      },
+      # API Gateway
+      {
+        Sid    = "APIGatewayManagement"
+        Effect = "Allow"
+        Action = [
+          "apigateway:GET",
+          "apigateway:POST",
+          "apigateway:PUT",
+          "apigateway:DELETE",
+          "apigateway:PATCH",
+        ]
+        Resource = ["*"]
+      },
+      # Cognito
+      {
+        Sid    = "CognitoManagement"
+        Effect = "Allow"
+        Action = [
+          "cognito-idp:CreateUserPool",
+          "cognito-idp:DeleteUserPool",
+          "cognito-idp:DescribeUserPool",
+          "cognito-idp:UpdateUserPool",
+          "cognito-idp:CreateUserPoolClient",
+          "cognito-idp:DeleteUserPoolClient",
+          "cognito-idp:DescribeUserPoolClient",
+          "cognito-idp:UpdateUserPoolClient",
+          "cognito-idp:CreateUserPoolDomain",
+          "cognito-idp:DeleteUserPoolDomain",
+          "cognito-idp:DescribeUserPoolDomain",
+          "cognito-idp:SetUserPoolMfaConfig",
+          "cognito-idp:GetUserPoolMfaConfig",
+          "cognito-idp:TagResource",
+          "cognito-idp:UntagResource",
+        ]
+        Resource = ["*"]
+      },
+      # CloudFront
+      {
+        Sid    = "CloudFrontManagement"
+        Effect = "Allow"
+        Action = [
+          "cloudfront:CreateDistribution",
+          "cloudfront:DeleteDistribution",
+          "cloudfront:GetDistribution",
+          "cloudfront:UpdateDistribution",
+          "cloudfront:GetDistributionConfig",
+          "cloudfront:CreateOriginAccessIdentity",
+          "cloudfront:GetCloudFrontOriginAccessIdentity",
+          "cloudfront:GetCloudFrontOriginAccessIdentityConfig",
+          "cloudfront:DeleteCloudFrontOriginAccessIdentity",
+          "cloudfront:UpdateCloudFrontOriginAccessIdentity",
+          "cloudfront:ListCachePolicies",
+          "cloudfront:GetCachePolicy",
+          "cloudfront:ListOriginRequestPolicies",
+          "cloudfront:GetOriginRequestPolicy",
+          "cloudfront:CreateInvalidation",
+          "cloudfront:TagResource",
+          "cloudfront:UntagResource",
+          "cloudfront:ListTagsForResource",
+        ]
+        Resource = ["*"]
+      },
+      # SNS
+      {
+        Sid    = "SNSManagement"
+        Effect = "Allow"
+        Action = [
+          "sns:CreateTopic",
+          "sns:DeleteTopic",
+          "sns:GetTopicAttributes",
+          "sns:SetTopicAttributes",
+          "sns:Subscribe",
+          "sns:Unsubscribe",
+          "sns:ListSubscriptionsByTopic",
+          "sns:TagResource",
+          "sns:UntagResource",
+        ]
+        Resource = ["*"]
+      },
+      # CloudWatch / Logs
+      {
+        Sid    = "CloudWatchManagement"
+        Effect = "Allow"
+        Action = [
+          "cloudwatch:PutMetricAlarm",
+          "cloudwatch:DeleteAlarms",
+          "cloudwatch:DescribeAlarms",
+          "cloudwatch:TagResource",
+          "cloudwatch:UntagResource",
+          "cloudwatch:ListTagsForResource",
+          "logs:CreateLogGroup",
+          "logs:DeleteLogGroup",
+          "logs:DescribeLogGroups",
+          "logs:PutRetentionPolicy",
+          "logs:DeleteRetentionPolicy",
+          "logs:TagLogGroup",
+          "logs:UntagLogGroup",
+          "logs:ListTagsLogGroup",
+          "logs:ListTagsForResource",
+        ]
+        Resource = ["*"]
       },
     ]
   })
