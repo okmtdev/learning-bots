@@ -45,7 +45,8 @@ jobs:
           NEXT_PUBLIC_COGNITO_USER_POOL_ID: ${{ secrets.COGNITO_USER_POOL_ID }}
           NEXT_PUBLIC_COGNITO_CLIENT_ID: ${{ secrets.COGNITO_CLIENT_ID }}
           NEXT_PUBLIC_COGNITO_DOMAIN: ${{ secrets.COGNITO_DOMAIN }}
-          NEXT_PUBLIC_REDIRECT_URI: ${{ secrets.REDIRECT_URI }}
+          NEXT_PUBLIC_COGNITO_REDIRECT_URI: ${{ secrets.REDIRECT_URI }}
+          NEXT_PUBLIC_COGNITO_LOGOUT_URI: ${{ secrets.LOGOUT_URI }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
