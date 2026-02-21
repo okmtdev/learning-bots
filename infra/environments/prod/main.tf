@@ -232,6 +232,8 @@ resource "aws_iam_role_policy" "github_actions" {
           "s3:GetBucketWebsite",
           "s3:PutBucketWebsite",
           "s3:DeleteBucketWebsite",
+          "s3:GetBucketLogging",
+          "s3:PutBucketLogging",
           "s3:GetAccelerateConfiguration",
           "s3:GetBucketRequestPayment",
           "s3:GetObject",
@@ -339,6 +341,10 @@ resource "aws_iam_role_policy" "github_actions" {
           "cognito-idp:DescribeUserPoolDomain",
           "cognito-idp:SetUserPoolMfaConfig",
           "cognito-idp:GetUserPoolMfaConfig",
+          "cognito-idp:DescribeIdentityProvider",
+          "cognito-idp:CreateIdentityProvider",
+          "cognito-idp:UpdateIdentityProvider",
+          "cognito-idp:DeleteIdentityProvider",
           "cognito-idp:TagResource",
           "cognito-idp:UntagResource",
         ]
@@ -382,6 +388,7 @@ resource "aws_iam_role_policy" "github_actions" {
           "sns:Subscribe",
           "sns:Unsubscribe",
           "sns:ListSubscriptionsByTopic",
+          "sns:ListTagsForResource",
           "sns:TagResource",
           "sns:UntagResource",
         ]
