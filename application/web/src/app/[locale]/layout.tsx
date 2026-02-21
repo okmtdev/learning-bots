@@ -1,15 +1,22 @@
 import { LocaleLayoutClient } from "./layout-client";
+import { getMessages } from "@/i18n";
 
 export function generateStaticParams() {
   return [{ locale: "ja" }, { locale: "en" }];
 }
 
-export default function LocaleLayout({
+export default async function LocaleLayout({
   children,
   params,
 }: {
   children: React.ReactNode;
   params: { locale: string };
 }) {
-  return <LocaleLayoutClient params={params}>{children}</LocaleLayoutClient>;
+  const messages = await getMessages(params.locale);
+
+  return (
+    <LocaleLayoutClient params={params} messages={messages}>
+      {children}
+    </LocaleLayoutClient>
+  );
 }
