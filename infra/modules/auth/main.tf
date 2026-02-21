@@ -11,7 +11,7 @@ resource "aws_cognito_user_pool" "main" {
     name                = "email"
     attribute_data_type = "String"
     required            = true
-    mutable             = false
+    mutable             = true
 
     string_attribute_constraints {
       min_length = 1
