@@ -32,7 +32,7 @@ export default function LandingPage() {
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
             あなたのミーティングを、
             <br />
-            もっと楽しく。
+            もっと鮮やかに。
           </h2>
           <p className="text-lg md:text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
             Colonは、Google Meetに招待できるカスタマイズ可能なインタラクティブボットサービスです。

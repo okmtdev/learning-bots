@@ -84,11 +84,12 @@ Colon（コロン）は、Google Meetに招待できるカスタマイズ可能�
 
 | 項目 | 内容 |
 |------|------|
-| フレームワーク | Next.js (Static Export) |
+| フレームワーク | Next.js 14+ (Static Export) |
 | ホスティング | S3 + CloudFront |
 | 認証 | Cognito Hosted UI (Google OAuth 2.0) |
-| 状態管理 | React Context + SWR (データフェッチ) |
-| 国際化 | next-intl（日本語/英語） |
+| 状態管理 | React Context (AuthProvider, ToastProvider) + SWR (データフェッチ) |
+| 国際化 | next-intl（依存関係のみ。実際のUIテキストは日本語ハードコード、翻訳ファイルは未使用） |
+| ビルド設定 | `output: "export"`, `trailingSlash: true`, `images: { unoptimized: true }` |
 | 固定費 | 実質ゼロ（従量課金のみ） |
 
 **選定理由:** Static Exportにすることで、S3 + CloudFrontだけで配信可能。サーバー不要で固定費ゼロ。
@@ -100,14 +101,18 @@ Colon（コロン）は、Google Meetに招待できるカスタマイズ可能�
 | サービス | Amazon Cognito User Pool |
 | IdP | Google (OAuth 2.0 / OpenID Connect) |
 | トークン | JWT (ID Token / Access Token / Refresh Token) |
-| セッション | フロントエンドでトークン管理 |
+| セッション | フロントエンドで localStorage にトークン保持（キー: `colon_tokens`） |
+| トークン有効期限 | Access/ID Token: 1時間、Refresh Token: 30日 |
 
 **フロー:**
 1. ユーザーが「Googleでログイン」をクリック
-2. Cognito Hosted UI → Google OAuth 同意画面
-3. Google認証完了 → Cognito にコールバック
-4. Cognito が JWT トークンを発行
-5. フロントエンドがトークンを保持し、API リクエストに付与
+2. Cognito Hosted UI → Google OAuth 同意画面（`identity_provider: Google` 指定）
+3. Google認証完了 → `/{locale}/auth/callback` にリダイレクト
+4. コールバックページが認可コードを Cognito `/oauth2/token` エンドポイントでトークンに交換
+5. トークンを localStorage に保存、`GET /auth/me` でユーザー情報取得
+6. ダッシュボードにリダイレクト
+
+> **注意**: Refresh Token は保存されるが、現在の実装ではトークンリフレッシュフローは未実装。有効期限切れ時はトークンクリアされ再ログインが必要。
 
 ### 3.3 バックエンド API
 
@@ -145,7 +150,7 @@ Colon（コロン）は、Google Meetに招待できるカスタマイズ可能�
 | サービス | Amazon S3 |
 | 用途 | 録画ファイル保存 |
 | アクセス | CloudFront署名付きURLで配信 |
-| ライフサイクル | 90日後にGlacierへ移行（コスト最適化） |
+| ライフサイクル | 90日後にGlacierへ移行、365日後に削除 |
 
 ### 3.6 ボットエンジン（Recall.ai）
 
@@ -153,15 +158,18 @@ Colon（コロン）は、Google Meetに招待できるカスタマイズ可能�
 |------|------|
 | サービス | Recall.ai |
 | 連携方法 | REST API |
+| Webhook認証 | Svix ライブラリによる署名検証（`svix-id`, `svix-timestamp`, `svix-signature` ヘッダー） |
 | 主な機能 | ボットの会議参加、リアルタイム転写、録画、チャット送信、リアクション |
 
 **Recall.ai連携フロー:**
 1. ユーザーがWeb UIからミーティングURLを入力して招待
-2. Lambda が Recall.ai API を呼び出し、ボットを会議に参加させる
+2. Lambda が Recall.ai API を呼び出し、ボットを会議に参加させる（`meeting_url`, `bot_name`, `recording_mode` を送信）
 3. Recall.ai がリアルタイムで転写・インタラクションを実行
-4. 会議終了後、Recall.ai が Webhook で録画完了を通知
+4. 会議終了後、Recall.ai が Webhook で録画完了を通知（Svix 署名付き）
 5. Lambda が録画データを取得し、S3に保存
 6. DynamoDB に録画メタデータを記録
+
+> **注意**: 現在の実装では、Webhook受信時のS3アップロード・メタデータ保存・ボットステータス更新（ステップ5-6）は未完成。また、ボットのインタラクティブ機能（reaction/chat/voice + triggerMode）は Recall.ai API にまだ送信されていない。
 
 ### 3.7 モニタリング・ログ
 
@@ -169,7 +177,10 @@ Colon（コロン）は、Google Meetに招待できるカスタマイズ可能�
 |------|------|
 | ログ | CloudWatch Logs (Lambda自動連携) |
 | メトリクス | CloudWatch Metrics |
-| アラーム | CloudWatch Alarms (Lambda エラー率) |
+| アラーム | CloudWatch Alarms (Lambda エラー数 > 0、API Gateway 5xx) |
+| 通知 | SNS トピック → メール通知 |
+
+> **未実装のアラーム**: Lambda Duration p99、DynamoDB ThrottledRequests、API レイテンシ p95 のアラームは未作成。また CloudWatch Logs の保存期限設定も未設定。
 
 ---
 
@@ -215,16 +226,24 @@ Colon（コロン）は、Google Meetに招待できるカスタマイズ可能�
 
 | レイヤー | 技術 |
 |----------|------|
-| フロントエンド | Next.js, React, TypeScript |
+| フロントエンド | Next.js 14+, React 18, TypeScript |
 | スタイリング | Tailwind CSS |
-| 状態管理 | React Context, SWR |
-| バックエンド | AWS Lambda (Node.js 20.x, TypeScript) |
+| 状態管理 | React Context (AuthProvider, ToastProvider), SWR |
+| API クライアント | カスタム `ApiClient` クラス (`fetch` ラッパー) |
+| ユーティリティ | clsx |
+| バックエンド | AWS Lambda (Node.js 20.x, TypeScript, arm64) |
+| バリデーション | Zod |
+| ビルドツール | esbuild (ESM バンドル) |
+| テスト | Vitest |
 | API | Amazon API Gateway (REST) |
 | 認証 | Amazon Cognito + Google OAuth 2.0 |
 | データベース | Amazon DynamoDB |
 | ストレージ | Amazon S3 |
 | CDN | Amazon CloudFront |
-| 監視 | Amazon CloudWatch |
+| 監視 | Amazon CloudWatch + SNS |
+| Webhook検証 | Svix |
+| ID生成 | ULID |
 | IaC | Terraform |
-| CI/CD | GitHub Actions |
+| CI/CD | GitHub Actions (OIDC 認証) |
+| パッケージマネージャ | pnpm (ワークスペース構成) |
 | ボットエンジン | Recall.ai |

@@ -8,7 +8,7 @@ Colon（コロン）のWeb管理画面のUI/UX設計書。ユーザーはこのW
 
 - toC サービスのような親しみやすく楽しいデザイン
 - 堅苦しすぎない敬語ベースの文言
-- 日本語デフォルト、設定から英語切り替え可能
+- 日本語デフォルト（英語切り替えは構造のみ準備済み、UIテキストは日本語ハードコード）
 - モバイルレスポンシブ対応
 
 ### カラーパレット（案）
@@ -17,10 +17,10 @@ Colon（コロン）のWeb管理画面のUI/UX設計書。ユーザーはこのW
 |------|--------|------|
 | Primary | `#6C5CE7` | 紫系 - 楽しさ・創造性を表現 |
 | Secondary | `#00B894` | 緑系 - 安心感・信頼性 |
-| Accent | `#FDCB6E` | 黄色系 - ポップなアクセント |
+| Accent | `#FDCB6E` | 黄色系 - ポップなアクセント（定義済みだが未使用） |
 | Background | `#F8F9FA` | ライトグレー - 清潔感 |
 | Text | `#2D3436` | ダークグレー - 読みやすさ |
-| Error | `#E17055` | オレンジ赤 - 警告・エラー |
+| Error/Danger | Tailwind `red-600` (`#DC2626`) | 赤系 - 警告・エラー・削除ボタン |
 
 ---
 
@@ -28,16 +28,20 @@ Colon（コロン）のWeb管理画面のUI/UX設計書。ユーザーはこのW
 
 | No | 画面名 | パス | 認証 | 説明 |
 |----|--------|------|------|------|
-| 1 | ランディングページ | `/` | 不要 | サービス紹介＋ログインCTA |
-| 2 | ダッシュボード | `/dashboard` | 必要 | ボット一覧・管理のホーム画面 |
-| 3 | ボット作成 | `/bots/new` | 必要 | 新規ボット作成フォーム |
-| 4 | ボット詳細・編集 | `/bots/detail?id={botId}` | 必要 | ボット設定の確認・編集 |
-| 5 | ボット招待 | `/bots/invite?id={botId}` | 必要 | ミーティングへのボット招待 |
-| 6 | 録画一覧 | `/recordings` | 必要 | 録画リスト |
-| 7 | 録画詳細 | `/recordings/detail?id={recordingId}` | 必要 | 録画再生・詳細 |
-| 8 | 設定 | `/settings` | 必要 | ユーザー設定（言語等） |
+| 1 | ランディングページ | `/{locale}/` | 不要 | サービス紹介＋ログインCTA |
+| 2 | 認証コールバック | `/{locale}/auth/callback` | - | Cognito OAuth コールバック処理 |
+| 3 | ダッシュボード | `/{locale}/dashboard` | 必要 | ボット一覧・管理のホーム画面 |
+| 4 | ボット作成 | `/{locale}/bots/new` | 必要 | 新規ボット作成フォーム |
+| 5 | ボット詳細・編集 | `/{locale}/bots/detail?id={botId}` | 必要 | ボット設定の確認・編集 |
+| 6 | ボット招待 | `/{locale}/bots/invite?id={botId}` | 必要 | ミーティングへのボット招待 |
+| 7 | 録画一覧 | `/{locale}/recordings` | 必要 | 録画リスト |
+| 8 | 録画詳細 | `/{locale}/recordings/detail?id={recordingId}` | 必要 | 録画再生・詳細 |
+| 9 | 設定 | `/{locale}/settings` | 必要 | ユーザー設定（言語等） |
 
-> **注意**: Next.js の `output: "export"` (S3静的ホスティング) では動的パスセグメント (`[id]`) が使用不可のため、IDはクエリパラメータで渡す方式を採用。
+> **注意**:
+> - Next.js の `output: "export"` (S3静的ホスティング) では動的パスセグメント (`[id]`) が使用不可のため、IDはクエリパラメータで渡す方式を採用。
+> - `{locale}` は `ja` または `en`。`generateStaticParams` で静的生成される。
+> - 現在の実装では、ナビゲーションリンクの多くが `/ja/` にハードコードされている。
 
 ---
 
@@ -266,9 +270,9 @@ Colon（コロン）のWeb管理画面のUI/UX設計書。ユーザーはこのW
 
 #### 機能
 - ボット別フィルター
-- 日付範囲フィルター
-- ページネーション（1ページ10件）
 - 録画の削除（確認ダイアログ付き）
+
+> **現在の実装状況**: 日付範囲フィルター、ページネーションは未実装。最大50件を一括取得して表示。
 
 ---
 
@@ -353,21 +357,25 @@ Colon（コロン）のWeb管理画面のUI/UX設計書。ユーザーはこのW
 ```
 ランディングページ (/)
   │
-  ├── [Googleでログイン] ──→ Google OAuth ──→ ダッシュボード (/dashboard)
-  │                                              │
-  │                                              ├── [+ 新しいボット] ──→ ボット作成 (/bots/new)
-  │                                              │                         │
-  │                                              │                         └── [作成完了] ──→ ダッシュボード (/dashboard)
-  │                                              │
-  │                                              ├── [編集] ──→ ボット詳細・編集 (/bots/detail?id={botId})
-  │                                              │
-  │                                              ├── [招待] ──→ ボット招待 (/bots/invite?id={botId})
-  │                                              │
-  │                                              ├── [録画] ──→ 録画一覧 (/recordings)
-  │                                              │               │
-  │                                              │               └── [再生] ──→ 録画詳細 (/recordings/detail?id={recordingId})
-  │                                              │
-  │                                              └── [設定] ──→ 設定 (/settings)
+  ├── [Googleでログイン] ──→ Cognito Hosted UI ──→ Google OAuth
+  │                                                    │
+  │                                              認証コールバック (/{locale}/auth/callback)
+  │                                                    │
+  │                                              ダッシュボード (/{locale}/dashboard)
+  │                                                    │
+  │                                                    ├── [+ 新しいボット] ──→ ボット作成 (/{locale}/bots/new)
+  │                                                    │                         │
+  │                                                    │                         └── [作成完了] ──→ ダッシュボード
+  │                                                    │
+  │                                                    ├── [編集] ──→ ボット詳細・編集 (/{locale}/bots/detail?id={botId})
+  │                                                    │
+  │                                                    ├── [招待] ──→ ボット招待 (/{locale}/bots/invite?id={botId})
+  │                                                    │
+  │                                                    ├── [録画] ──→ 録画一覧 (/{locale}/recordings)
+  │                                                    │               │
+  │                                                    │               └── [再生] ──→ 録画詳細 (/{locale}/recordings/detail?id={recordingId})
+  │                                                    │
+  │                                                    └── [設定] ──→ 設定 (/{locale}/settings)
 ```
 
 ---
@@ -375,15 +383,18 @@ Colon（コロン）のWeb管理画面のUI/UX設計書。ユーザーはこのW
 ## 5. 共通コンポーネント
 
 ### 5.1 ヘッダー（認証後）
-- ロゴ（クリックでダッシュボードへ）
-- 録画一覧リンク
-- 設定リンク
-- ユーザーアバター＋ドロップダウン（設定、ログアウト）
+- ロゴ「Colon」（クリックでダッシュボードへ）
+- 録画一覧リンク（「録画」）
+- 設定リンク（「設定」）
+- ユーザーアバター（名前のイニシャル表示）＋ドロップダウン（設定、ログアウト）
+- モバイル時: ハンバーガーメニューで展開
 
 ### 5.2 確認ダイアログ
 - ボット削除、録画削除、アカウント削除時に表示
 - 「本当に削除しますか？この操作は取り消せません。」
-- [キャンセル] [削除する] ボタン
+- [Cancel] [削除する] ボタン
+  - ※ 現在の実装ではキャンセルボタンのラベルが英語「Cancel」のまま
+- Escapeキーで閉じる対応、ポータル描画、背景スクロールロック対応
 
 ### 5.3 トースト通知
 - 操作成功時: 緑色トースト（「ボットを作成しました」等）
@@ -391,12 +402,27 @@ Colon（コロン）のWeb管理画面のUI/UX設計書。ユーザーはこのW
 - 3秒で自動消去
 
 ### 5.4 ローディング
-- API通信中はスケルトンスクリーン表示
-- ボタン操作中はボタン内にスピナー表示＋二重送信防止
+- API通信中は「読み込み中...」テキストを表示（スケルトンスクリーンは未実装）
+- ボタン操作中はボタン内にSVGスピナー表示＋二重送信防止（`loading` props）
 
 ### 5.5 空状態（Empty State）
-- ボットが0件: イラスト＋「まだボットがありません。最初のボットを作成しましょう！」
-- 録画が0件: イラスト＋「まだ録画がありません。ボットを招待して録画を始めましょう！」
+- ボットが0件: 絵文字（🤖）＋「まだボットがありません。最初のボットを作成しましょう！」
+- 録画が0件: 絵文字（📹）＋「まだ録画がありません。ボットを招待して録画を始めましょう！」
+- ※ イラストの代わりに絵文字を使用している
+
+### 5.6 UIコンポーネント一覧
+
+| コンポーネント | ファイル | 主なProps | 説明 |
+|---|---|---|---|
+| `Button` | `components/ui/button.tsx` | `variant` (primary/secondary/danger/ghost), `size` (sm/md/lg), `loading` | `forwardRef` 対応、ローディング時 SVG スピナー表示 |
+| `Card` | `components/ui/card.tsx` | `title`, `children`, `className` | 角丸ボーダー付きコンテナ |
+| `Dialog` | `components/ui/dialog.tsx` | `open`, `onClose`, `onConfirm`, `title`, `variant`, `confirmLabel`, `cancelLabel` | `createPortal` 描画、Escape キー対応、背景スクロールロック |
+| `Input` | `components/ui/input.tsx` | `label`, `error`, `helperText` | `forwardRef` 対応、aria 属性付き |
+| `Toast` | `components/ui/toast.tsx` | `showToast(message, type)` | Context ベース、3秒自動消去、success（緑）/ error（赤） |
+| `Toggle` | `components/ui/toggle.tsx` | `label`, `checked` | CSS peer セレクタによるカスタムスイッチ |
+| `BotCard` | `components/features/bot-card.tsx` | `bot`, `onEdit`, `onInvite`, `onDelete` | ステータスバッジ、機能 ON/OFF 表示 |
+| `BotForm` | `components/features/bot-form.tsx` | `initialData`, `onSubmit`, `submitLabel` | ボット作成/編集共通フォーム |
+| `RecordingCard` | `components/features/recording-card.tsx` | `recording`, `onPlay`, `onDelete` | ステータスバッジ、日時・時間表示 |
 
 ---
 

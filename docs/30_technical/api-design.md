@@ -223,6 +223,8 @@ DELETE /bots/{botId}
 
 **注意:** ボットが `in_meeting` ステータスの場合、先にミーティングから退出させる必要がある（409 CONFLICT を返す）。
 
+> **未実装**: カスケード削除（関連するセッション・録画の削除）は未実装。ボットレコードのみ削除される。
+
 ---
 
 ## 4. ボット招待 API
@@ -262,6 +264,8 @@ POST /bots/{botId}/invite
 **エラーケース:**
 - 409: ボットが既にミーティングに参加中
 - 422: 無効な Google Meet URL
+
+> **注意**: 現在の実装では、Recall.ai API に `meeting_url`, `bot_name`, `recording_mode` のみ送信。ボットのインタラクティブ機能設定（`features`, `triggerMode`）は Recall.ai に送信されていない。
 
 ---
 
@@ -322,8 +326,8 @@ GET /recordings
 | パラメータ | 型 | 必須 | 説明 |
 |-----------|-----|------|------|
 | `botId` | String | ❌ | ボットIDでフィルター |
-| `startDate` | String | ❌ | 開始日 (YYYY-MM-DD) |
-| `endDate` | String | ❌ | 終了日 (YYYY-MM-DD) |
+| `startDate` | String | ❌ | 開始日 (YYYY-MM-DD)　※ 未実装 |
+| `endDate` | String | ❌ | 終了日 (YYYY-MM-DD)　※ 未実装 |
 | `limit` | Number | ❌ | 取得件数（デフォルト: 10、最大: 50） |
 | `nextToken` | String | ❌ | ページネーショントークン |
 
@@ -453,18 +457,20 @@ DELETE /settings/account
 **レスポンス: 204 No Content**
 
 以下を順次実行:
-1. すべてのボットをミーティングから退出
-2. すべての録画ファイル（S3）を削除
-3. すべてのDynamoDBレコードを削除
+1. すべての録画ファイル（S3）を削除
+2. すべてのDynamoDBレコード（録画、ボット）を削除
+3. ユーザーレコードを削除
 4. Cognito ユーザーを削除
+
+> **注意**: 現在の実装では、削除前にアクティブなボットセッションを確認・退出させる処理は未実装。また、ボットセッションテーブルのレコード削除も未実装。
 
 ---
 
 ## 7. Webhook API（内部）
 
-### 7.1. Recall.ai 録画完了 Webhook
+### 7.1. Recall.ai Webhook
 
-Recall.ai からの録画完了通知を受信する。API Gateway に直接ルーティングされ、Cognito認証は**不要**（Webhook シークレットで認証）。
+Recall.ai からのイベント通知を受信する。API Gateway に直接ルーティングされ、Cognito認証は**不要**（Svix 署名で検証）。
 
 ```
 POST /webhooks/recall
@@ -472,17 +478,29 @@ POST /webhooks/recall
 
 **ヘッダー:**
 ```
-X-Webhook-Secret: {webhook_secret}
+svix-id: {message_id}
+svix-timestamp: {unix_timestamp}
+svix-signature: {signature}
 ```
+
+**対応イベント:**
+| イベント | 説明 |
+|--------|------|
+| `bot.done` | ボット完了（録画データ取得・保存処理） |
+| `bot.call_ended` | ミーティング終了 |
+| `bot.fatal` | ボットエラー |
+| `bot.in_call_recording` | 録画中ステータス更新 |
 
 **リクエストボディ:** Recall.ai のWebhookペイロード仕様に準拠
 
-**処理内容:**
-1. Webhook シークレットの検証
+**処理内容（`bot.done` イベント時）:**
+1. Svix 署名の検証
 2. 録画データを Recall.ai API から取得
 3. S3 に録画ファイルをアップロード
 4. DynamoDB に録画メタデータを保存
 5. ボットステータスを `idle` に更新
+
+> **注意**: 現在の実装では、ステップ3、4、5は未完成。動画ダウンロードまでは実行されるが、S3アップロード・メタデータ保存・ステータス更新は未実装。
 
 **レスポンス: 200 OK**
 
