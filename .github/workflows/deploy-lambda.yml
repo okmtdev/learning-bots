@@ -52,16 +52,16 @@ jobs:
           FUNCTIONS=("bot-crud" "bot-invite" "recording-crud" "recording-webhook" "user-settings")
 
           for func in "${FUNCTIONS[@]}"; do
-            echo "Deploying colon-${func}..."
+            echo "Deploying colon-${func}-prod..."
 
             cd api/dist/${func}
             zip -r ../../../${func}.zip .
             cd ../../../
 
             aws lambda update-function-code \
-              --function-name "colon-${func}" \
+              --function-name "colon-${func}-prod" \
               --zip-file "fileb://${func}.zip" \
               --publish
 
-            echo "Deployed colon-${func} successfully"
+            echo "Deployed colon-${func}-prod successfully"
           done
