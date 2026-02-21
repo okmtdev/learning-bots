@@ -8,10 +8,10 @@ import { useState } from "react";
 
 export default function RecordingsPage() {
   const [selectedBotId, setSelectedBotId] = useState<string>("");
-  const { recordings, isLoading } = useRecordings(
-    selectedBotId || undefined,
-    50
-  );
+  const { recordings, isLoading } = useRecordings({
+    botId: selectedBotId || undefined,
+    limit: 50,
+  });
   const { bots } = useBots();
 
   return (

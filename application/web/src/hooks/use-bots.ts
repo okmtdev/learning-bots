@@ -7,7 +7,7 @@ import type { Bot } from "@/types";
 export function useBots() {
   const { data, error, isLoading, mutate } = useSWR<{ bots: Bot[] }>(
     "/bots",
-    () => api.get("/bots")
+    () => api.get<{ bots: Bot[] }>("/bots")
   );
 
   return {
@@ -21,7 +21,7 @@ export function useBots() {
 export function useBot(botId: string | null) {
   const { data, error, isLoading, mutate } = useSWR<Bot>(
     botId ? `/bots/${botId}` : null,
-    () => api.get(`/bots/${botId}`)
+    () => api.get<Bot>(`/bots/${botId}`)
   );
 
   return {

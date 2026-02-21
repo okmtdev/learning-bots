@@ -41,7 +41,7 @@ export const RecordingCard = ({ recording }: RecordingCardProps) => {
   const status = statusConfig[recording.status];
 
   return (
-    <Link href={`/recordings/${recording.recordingId}`}>
+    <Link href={`recordings/detail?id=${recording.recordingId}`}>
       <Card className="transition-shadow hover:shadow-md">
         {/* Header */}
         <div className="flex items-center justify-between">

@@ -104,6 +104,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "recordings" {
     id     = "archive-and-expire"
     status = "Enabled"
 
+    filter {}
+
     transition {
       days          = 90
       storage_class = "GLACIER"

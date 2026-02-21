@@ -7,7 +7,7 @@ import { Toggle } from "@/components/ui/toggle";
 import { Dialog } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/components/ui/toast";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
@@ -30,7 +30,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const data = await apiClient.get<UserSettings>("/settings");
+        const data = await api.get<UserSettings>("/settings");
         setSettings(data);
       } catch {
         // default settings
@@ -42,7 +42,7 @@ export default function SettingsPage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await apiClient.put("/settings", settings);
+      await api.put("/settings", settings);
       showToast("設定を保存しました", "success");
     } catch {
       showToast("保存に失敗しました", "error");
@@ -53,7 +53,7 @@ export default function SettingsPage() {
 
   const handleDeleteAccount = async () => {
     try {
-      await apiClient.delete("/settings/account");
+      await api.delete("/settings/account");
       showToast("アカウントを削除しました", "success");
       logout();
       router.push("/ja");
@@ -74,9 +74,9 @@ export default function SettingsPage() {
         <Card title="アカウント情報">
           <div className="space-y-3">
             <div className="flex items-center gap-4">
-              {user?.picture && (
+              {user?.avatarUrl && (
                 <img
-                  src={user.picture}
+                  src={user.avatarUrl}
                   alt=""
                   className="w-12 h-12 rounded-full"
                 />
@@ -110,8 +110,8 @@ export default function SettingsPage() {
             <Toggle
               label="通知を受け取る"
               checked={settings.notificationsEnabled}
-              onChange={(checked) =>
-                setSettings({ ...settings, notificationsEnabled: checked })
+              onChange={(e) =>
+                setSettings({ ...settings, notificationsEnabled: e.target.checked })
               }
             />
           </div>
@@ -138,14 +138,15 @@ export default function SettingsPage() {
       </main>
 
       <Dialog
-        isOpen={showDeleteAccount}
+        open={showDeleteAccount}
         title="アカウントを削除"
-        message="本当にアカウントを削除しますか？すべてのデータが完全に消去されます。"
         confirmLabel="完全に削除する"
         variant="danger"
         onConfirm={handleDeleteAccount}
-        onCancel={() => setShowDeleteAccount(false)}
-      />
+        onClose={() => setShowDeleteAccount(false)}
+      >
+        本当にアカウントを削除しますか？すべてのデータが完全に消去されます。
+      </Dialog>
     </>
   );
 }

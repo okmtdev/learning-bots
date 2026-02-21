@@ -18,7 +18,7 @@ export function useRecordings(params?: { botId?: string; limit?: number }) {
 
   const { data, error, isLoading, mutate } = useSWR<RecordingsResponse>(
     key,
-    () => api.get(key)
+    () => api.get<RecordingsResponse>(key)
   );
 
   return {
@@ -33,7 +33,7 @@ export function useRecordings(params?: { botId?: string; limit?: number }) {
 export function useRecording(recordingId: string | null) {
   const { data, error, isLoading } = useSWR<Recording>(
     recordingId ? `/recordings/${recordingId}` : null,
-    () => api.get(`/recordings/${recordingId}`)
+    () => api.get<Recording>(`/recordings/${recordingId}`)
   );
 
   return {

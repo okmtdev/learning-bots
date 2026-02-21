@@ -67,12 +67,12 @@ export const BotCard = ({ bot, onDelete }: BotCardProps) => {
 
       {/* Actions */}
       <div className="flex flex-wrap gap-2 border-t border-gray-100 pt-4">
-        <Link href={`/bots/${bot.botId}/edit`}>
+        <Link href={`bots/detail?id=${bot.botId}`}>
           <Button variant="ghost" size="sm">
             編集
           </Button>
         </Link>
-        <Link href={`/bots/${bot.botId}/invite`}>
+        <Link href={`bots/invite?id=${bot.botId}`}>
           <Button variant="secondary" size="sm">
             招待
           </Button>

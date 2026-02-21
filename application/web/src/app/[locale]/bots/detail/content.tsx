@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Header } from "@/components/layout/header";
 import { BotForm } from "@/components/features/bot-form";
 import { useBot, updateBot, deleteBot } from "@/hooks/use-bots";
@@ -11,11 +11,11 @@ import { useState } from "react";
 import Link from "next/link";
 import type { Bot } from "@/types";
 
-export default function BotDetailPage() {
-  const params = useParams();
-  const botId = params.id as string;
+export default function BotDetailContent() {
+  const searchParams = useSearchParams();
+  const botId = searchParams.get("id") ?? "";
   const router = useRouter();
-  const { bot, isLoading } = useBot(botId);
+  const { bot, isLoading } = useBot(botId || null);
   const { showToast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
@@ -36,13 +36,24 @@ export default function BotDetailPage() {
     try {
       await deleteBot(botId);
       showToast("ボットを削除しました", "success");
-      router.push("/ja/dashboard");
+      router.push("../dashboard");
     } catch {
       showToast("削除に失敗しました", "error");
     } finally {
       setShowDelete(false);
     }
   };
+
+  if (!botId) {
+    return (
+      <>
+        <Header />
+        <div className="max-w-2xl mx-auto px-4 py-12 text-center text-gray-500">
+          ボットIDが指定されていません
+        </div>
+      </>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -72,7 +83,7 @@ export default function BotDetailPage() {
       <main className="max-w-2xl mx-auto px-4 py-8">
         <div className="mb-6 flex items-center justify-between">
           <Link
-            href="/ja/dashboard"
+            href="../dashboard"
             className="text-primary-500 hover:text-primary-600 text-sm"
           >
             ← 戻る
@@ -108,14 +119,15 @@ export default function BotDetailPage() {
       </main>
 
       <Dialog
-        isOpen={showDelete}
+        open={showDelete}
         title="ボットを削除"
-        message="本当に削除しますか？この操作は取り消せません。"
         confirmLabel="削除する"
         variant="danger"
         onConfirm={handleDelete}
-        onCancel={() => setShowDelete(false)}
-      />
+        onClose={() => setShowDelete(false)}
+      >
+        本当に削除しますか？この操作は取り消せません。
+      </Dialog>
     </>
   );
 }

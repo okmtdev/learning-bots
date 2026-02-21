@@ -37,7 +37,7 @@ output "recordings_table_arn" {
   value       = aws_dynamodb_table.recordings.arn
 }
 
-output "recordings_by_bot_gsi_arn" {
+output "recordings_gsi_arn" {
   description = "ARN of the Recordings-by-bot GSI"
   value       = "${aws_dynamodb_table.recordings.arn}/index/${var.project}-recordings-by-bot"
 }

@@ -40,13 +40,20 @@ application/
 ├── web/                          # フロントエンド
 │   ├── src/
 │   │   ├── app/                  # Next.js App Router
-│   │   │   ├── [locale]/         # 国際化ルート
+│   │   │   ├── [locale]/         # 国際化ルート（ja/en の2ロケール）
 │   │   │   │   ├── page.tsx      # ランディングページ
 │   │   │   │   ├── dashboard/
 │   │   │   │   ├── bots/
+│   │   │   │   │   ├── new/      # ボット作成
+│   │   │   │   │   ├── detail/   # ボット詳細・編集 (?id=xxx)
+│   │   │   │   │   └── invite/   # ボット招待 (?id=xxx)
 │   │   │   │   ├── recordings/
+│   │   │   │   │   └── detail/   # 録画詳細 (?id=xxx)
 │   │   │   │   └── settings/
 │   │   │   └── layout.tsx
+│   │   │
+│   │   │ ※ S3静的ホスティング (output: export) のため動的パス [id] は不使用。
+│   │   │   IDはクエリパラメータ (?id=xxx) で渡す。
 │   │   ├── components/           # 共通コンポーネント
 │   │   │   ├── ui/               # 基本UIコンポーネント
 │   │   │   ├── layout/           # レイアウト系

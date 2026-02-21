@@ -1,8 +1,10 @@
 locals {
-  api_gateway_domain = replace(replace(var.api_gateway_invoke_url, "https://", ""), "/.*", "")
-  api_gateway_stage  = replace(var.api_gateway_invoke_url, "/^https:\\/\\/[^\\/]+/", "")
-  s3_origin_id       = "S3-${var.web_bucket_id}"
-  api_origin_id      = "API-${var.api_gateway_id}"
+  # API Gateway invoke URL is like: https://abc123.execute-api.ap-northeast-1.amazonaws.com/v1
+  api_url_without_scheme = replace(var.api_gateway_invoke_url, "https://", "")
+  api_gateway_domain     = split("/", local.api_url_without_scheme)[0]
+  api_gateway_stage      = "/${split("/", local.api_url_without_scheme)[1]}"
+  s3_origin_id           = "S3-${var.web_bucket_id}"
+  api_origin_id          = "API-${var.api_gateway_id}"
 }
 
 # ============================================================

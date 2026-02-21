@@ -11,6 +11,7 @@ interface AuthContextType {
   isLoggedIn: boolean;
   login: () => void;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -19,6 +20,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false,
   login: () => {},
   logout: () => {},
+  refreshUser: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -55,6 +57,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = getLogoutUrl();
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const userData = await api.get<User>("/auth/me");
+      setUser(userData);
+    } catch {
+      clearTokens();
+    }
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -63,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoggedIn: !!user,
         login,
         logout,
+        refreshUser,
       }}
     >
       {children}

@@ -1,8 +1,8 @@
-"use client";
+import { LocaleLayoutClient } from "./layout-client";
 
-import { AuthProvider } from "@/hooks/use-auth";
-import { ToastProvider } from "@/components/ui/toast";
-import { Header } from "@/components/layout/header";
+export function generateStaticParams() {
+  return [{ locale: "ja" }, { locale: "en" }];
+}
 
 export default function LocaleLayout({
   children,
@@ -11,15 +11,5 @@ export default function LocaleLayout({
   children: React.ReactNode;
   params: { locale: string };
 }) {
-  return (
-    <html lang={params.locale}>
-      <body className="min-h-screen bg-gray-50 font-sans">
-        <AuthProvider>
-          <ToastProvider>
-            {children}
-          </ToastProvider>
-        </AuthProvider>
-      </body>
-    </html>
-  );
+  return <LocaleLayoutClient params={params}>{children}</LocaleLayoutClient>;
 }

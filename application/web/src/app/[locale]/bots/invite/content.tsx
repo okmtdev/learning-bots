@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Header } from "@/components/layout/header";
 import { useBot, inviteBot, leaveBot } from "@/hooks/use-bots";
 import { useToast } from "@/components/ui/toast";
@@ -10,10 +10,10 @@ import { Card } from "@/components/ui/card";
 import { useState } from "react";
 import Link from "next/link";
 
-export default function BotInvitePage() {
-  const params = useParams();
-  const botId = params.id as string;
-  const { bot, isLoading, mutate } = useBot(botId);
+export default function BotInviteContent() {
+  const searchParams = useSearchParams();
+  const botId = searchParams.get("id") ?? "";
+  const { bot, isLoading, mutate } = useBot(botId || null);
   const { showToast } = useToast();
   const [meetingUrl, setMeetingUrl] = useState("");
   const [isInviting, setIsInviting] = useState(false);
@@ -55,6 +55,17 @@ export default function BotInvitePage() {
     }
   };
 
+  if (!botId) {
+    return (
+      <>
+        <Header />
+        <div className="max-w-2xl mx-auto px-4 py-12 text-center text-gray-500">
+          ボットIDが指定されていません
+        </div>
+      </>
+    );
+  }
+
   if (isLoading) {
     return (
       <>
@@ -83,7 +94,7 @@ export default function BotInvitePage() {
       <main className="max-w-2xl mx-auto px-4 py-8">
         <div className="mb-6">
           <Link
-            href="/ja/dashboard"
+            href="../dashboard"
             className="text-primary-500 hover:text-primary-600 text-sm"
           >
             ← 戻る
@@ -97,7 +108,6 @@ export default function BotInvitePage() {
           🤖 {bot.botName} をミーティングに招待
         </p>
 
-        {/* Invite Form */}
         {bot.status !== "in_meeting" && (
           <Card title="ミーティングに招待">
             <form onSubmit={handleInvite} className="space-y-4">
@@ -110,7 +120,7 @@ export default function BotInvitePage() {
                 helperText="Google Meet のURLを貼り付けてください"
               />
               <div className="flex justify-end gap-3">
-                <Link href="/ja/dashboard">
+                <Link href="../dashboard">
                   <Button variant="ghost" type="button">
                     キャンセル
                   </Button>
@@ -123,7 +133,6 @@ export default function BotInvitePage() {
           </Card>
         )}
 
-        {/* Current Session */}
         {bot.currentSession && (
           <Card title="現在参加中のミーティング">
             <div className="space-y-3">

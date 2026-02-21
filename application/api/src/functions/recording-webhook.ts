@@ -1,5 +1,6 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm";
+import { Webhook } from "svix";
 import { ulid } from "ulid";
 import {
   getBot,
@@ -34,28 +35,49 @@ export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
-    // Verify webhook secret
+    // Verify webhook signature using Svix (whsec_... signing secret)
     const secret = await getWebhookSecret();
-    const headerSecret = event.headers["X-Webhook-Secret"] || event.headers["x-webhook-secret"];
+    const wh = new Webhook(secret);
 
-    if (headerSecret !== secret) {
-      logger.warn("webhook", "Invalid webhook secret");
-      return unauthorized("Invalid webhook secret");
+    let body: { event: string; data: Record<string, unknown> };
+    try {
+      body = wh.verify(event.body || "", {
+        "svix-id": event.headers["svix-id"] ?? "",
+        "svix-timestamp": event.headers["svix-timestamp"] ?? "",
+        "svix-signature": event.headers["svix-signature"] ?? "",
+      }) as { event: string; data: Record<string, unknown> };
+    } catch {
+      logger.warn("webhook", "Invalid webhook signature");
+      return unauthorized("Invalid webhook signature");
     }
 
-    const body = JSON.parse(event.body || "{}");
     logger.info("webhook", "Webhook received", {
-      metadata: { event: body.event, botId: body.data?.bot_id },
+      metadata: { event: body.event },
     });
 
     // Handle different webhook events
+    // Recall.ai sends individual status events (not a single "bot.status_change")
     switch (body.event) {
-      case "bot.status_change":
-        await handleStatusChange(body.data);
-        break;
       case "bot.done":
         await handleBotDone(body.data);
         break;
+      case "bot.call_ended":
+        await handleCallEnded(body.data);
+        break;
+      case "bot.fatal": {
+        const d = body.data as { bot?: { id?: string }; sub_code?: string };
+        logger.warn("webhook", "Bot fatal error", {
+          metadata: { recallBotId: d.bot?.id, subCode: d.sub_code },
+        });
+        break;
+      }
+      case "bot.in_call_recording": {
+        const d = body.data as { bot?: { id?: string } };
+        logger.info("webhook", "Bot started recording", {
+          metadata: { recallBotId: d.bot?.id },
+        });
+        break;
+      }
       default:
         logger.info("webhook", `Unhandled webhook event: ${body.event}`);
     }
@@ -67,26 +89,23 @@ export const handler = async (
   }
 };
 
-async function handleStatusChange(data: {
-  bot_id: string;
-  status: { code: string };
+async function handleCallEnded(data: {
+  bot: { id: string };
+  sub_code?: string;
 }): Promise<void> {
-  logger.info("webhook", `Bot status changed: ${data.status.code}`, {
-    metadata: { recallBotId: data.bot_id },
+  logger.info("webhook", "Call ended", {
+    metadata: { recallBotId: data.bot?.id, subCode: data.sub_code },
   });
-
-  // Find the session with this recall bot ID
-  // Note: In production, you would use a GSI on recallBotId
-  // For now, status updates are handled via the bot_done event
+  // Bot status update happens via bot.done which fires after this
 }
 
 async function handleBotDone(data: {
-  bot_id: string;
+  bot: { id: string };
   meeting_url?: string;
   video_url?: string;
   duration?: number;
 }): Promise<void> {
-  const recallBotId = data.bot_id;
+  const recallBotId = data.bot?.id;
   logger.info("webhook", "Bot done, processing recording", {
     metadata: { recallBotId },
   });

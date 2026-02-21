@@ -120,14 +120,15 @@ export default function DashboardPage() {
 
       {/* Delete Confirmation */}
       <Dialog
-        isOpen={!!deletingBotId}
+        open={!!deletingBotId}
         title="ボットを削除"
-        message="本当に削除しますか？この操作は取り消せません。"
         confirmLabel="削除する"
         variant="danger"
         onConfirm={handleDeleteBot}
-        onCancel={() => setDeletingBotId(null)}
-      />
+        onClose={() => setDeletingBotId(null)}
+      >
+        本当に削除しますか？この操作は取り消せません。
+      </Dialog>
     </>
   );
 }
