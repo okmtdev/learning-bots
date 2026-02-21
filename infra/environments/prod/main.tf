@@ -156,7 +156,12 @@ resource "aws_iam_role" "github_actions" {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
           }
           StringLike = {
-            "token.actions.githubusercontent.com:sub" = "repo:*:ref:refs/heads/main"
+            # environment: production を使う場合は environment:production 形式になる
+            # ref:refs/heads/main はブランチ直接実行の場合
+            "token.actions.githubusercontent.com:sub" = [
+              "repo:*:environment:production",
+              "repo:*:ref:refs/heads/main"
+            ]
           }
         }
       }
