@@ -1,0 +1,33 @@
+{
+  "name": "@colon/api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Colon Backend API - Lambda Functions",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src/ --ext .ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.500.0",
+    "@aws-sdk/client-s3": "^3.500.0",
+    "@aws-sdk/client-ssm": "^3.500.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.500.0",
+    "@aws-sdk/lib-dynamodb": "^3.500.0",
+    "@aws-sdk/cloudfront-signer": "^3.500.0",
+    "ulid": "^2.3.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.131",
+    "@types/node": "^20.11.0",
+    "esbuild": "^0.20.0",
+    "eslint": "^8.56.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.2.0"
+  }
+}

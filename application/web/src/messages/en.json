@@ -1,0 +1,130 @@
+{
+  "common": {
+    "appName": "Colon",
+    "login": "Log in",
+    "logout": "Log out",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "back": "Back",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "on": "ON",
+    "off": "OFF",
+    "settings": "Settings",
+    "recordings": "Recordings"
+  },
+  "landing": {
+    "hero": {
+      "title": "Make your meetings more fun.",
+      "subtitle": "Colon is a customizable interactive bot service for Google Meet. From meeting summaries to topic suggestions and recording, set it up your way.",
+      "cta": "Sign in with Google"
+    },
+    "features": {
+      "summary": {
+        "title": "Meeting Summaries",
+        "description": "Automatically post meeting summaries when called upon in chat."
+      },
+      "topics": {
+        "title": "Topic Suggestions",
+        "description": "Automatically research and provide relevant topics based on the conversation flow."
+      },
+      "recording": {
+        "title": "Recording",
+        "description": "Record important meetings and 1-on-1s to review anytime."
+      }
+    },
+    "steps": {
+      "title": "3 Easy Steps",
+      "step1": "Sign in with Google",
+      "step2": "Customize your bot",
+      "step3": "Invite to a meeting"
+    }
+  },
+  "dashboard": {
+    "greeting": "Hello, {name}!",
+    "yourBots": "Your Bots",
+    "newBot": "New Bot",
+    "recentRecordings": "Recent Recordings",
+    "viewAll": "View all recordings",
+    "noBots": "No bots yet. Create your first bot!",
+    "noRecordings": "No recordings yet. Invite a bot to start recording!"
+  },
+  "bot": {
+    "create": "Create a new bot",
+    "edit": "Edit bot",
+    "delete": "Delete bot",
+    "deleteConfirm": "Are you sure? This action cannot be undone.",
+    "invite": "Invite",
+    "name": "Bot Name",
+    "namePlaceholder": "Enter bot name",
+    "basicSettings": "Basic Settings",
+    "featureSettings": "Feature Settings",
+    "interactiveSettings": "Interactive Settings",
+    "interactive": "Interactive Features",
+    "recording": "Recording",
+    "triggerMode": "Trigger Mode",
+    "triggerChatOnly": "Chat only",
+    "triggerNameReaction": "React to name",
+    "triggerAllReaction": "React to all",
+    "features": "Bot Features",
+    "reaction": "Reactions",
+    "chat": "Chat",
+    "voice": "Auto Voice",
+    "instruction": "Instructions",
+    "instructionPlaceholder": "Describe when and how this feature should be used",
+    "status": {
+      "idle": "Idle",
+      "in_meeting": "In Meeting"
+    },
+    "created": "Bot created",
+    "updated": "Bot updated",
+    "deleted": "Bot deleted"
+  },
+  "invite": {
+    "title": "Invite Bot",
+    "description": "Invite {name} to a meeting",
+    "meetingUrl": "Google Meet URL",
+    "meetingUrlPlaceholder": "https://meet.google.com/xxx-xxxx-xxx",
+    "meetingUrlHelp": "Paste your Google Meet URL",
+    "submit": "Invite",
+    "currentSession": "Currently in meeting",
+    "leave": "Remove from meeting",
+    "invited": "Bot invited",
+    "left": "Bot removed from meeting"
+  },
+  "recording": {
+    "list": "Recordings",
+    "detail": "Recording Detail",
+    "play": "Play",
+    "download": "Download",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this recording? This action cannot be undone.",
+    "filterByBot": "Filter by bot",
+    "noRecordings": "No recordings yet. Invite a bot to start recording!",
+    "duration": "Duration",
+    "fileSize": "File Size",
+    "startedAt": "Started at",
+    "deleted": "Recording deleted",
+    "status": {
+      "processing": "Processing",
+      "ready": "Ready",
+      "failed": "Failed"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "account": "Account Info",
+    "language": "Language",
+    "displayLanguage": "Display Language",
+    "accountActions": "Account Actions",
+    "deleteAccount": "Delete Account",
+    "deleteAccountConfirm": "Are you sure you want to delete your account? All data will be permanently deleted.",
+    "saved": "Settings saved"
+  }
+}

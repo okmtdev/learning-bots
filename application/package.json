@@ -1,0 +1,16 @@
+{
+  "name": "colon",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Colon - Customizable Real-time Interactive Bot Service",
+  "scripts": {
+    "dev:web": "pnpm --filter @colon/web dev",
+    "build:web": "pnpm --filter @colon/web build",
+    "dev:api": "pnpm --filter @colon/api dev",
+    "build:api": "pnpm --filter @colon/api build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "packageManager": "pnpm@9.15.0"
+}

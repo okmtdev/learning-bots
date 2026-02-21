@@ -1,0 +1,177 @@
+import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+import { ulid } from "ulid";
+import {
+  getBot,
+  putBot,
+  getActiveBotSession,
+  putBotSession,
+  updateBotSession,
+} from "../lib/dynamodb.js";
+import { createRecallBot, removeRecallBot } from "../lib/recall.js";
+import { inviteBotSchema } from "../lib/validators.js";
+import {
+  success,
+  notFound,
+  conflict,
+  validationError,
+  internalError,
+  getUserId,
+  unauthorized,
+} from "../lib/response.js";
+import { logger } from "../lib/logger.js";
+
+export const handler = async (
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> => {
+  const userId = getUserId(event);
+  if (!userId) return unauthorized();
+
+  const method = event.httpMethod;
+  const botId = event.pathParameters?.botId;
+  const resource = event.resource;
+
+  if (!botId) return notFound("Bot ID is required");
+
+  try {
+    // POST /bots/{botId}/invite
+    if (method === "POST" && resource.endsWith("/invite")) {
+      return await handleInvite(userId, botId, event);
+    }
+
+    // POST /bots/{botId}/leave
+    if (method === "POST" && resource.endsWith("/leave")) {
+      return await handleLeave(userId, botId);
+    }
+
+    // GET /bots/{botId}/session
+    if (method === "GET" && resource.endsWith("/session")) {
+      return await handleGetSession(userId, botId);
+    }
+
+    return notFound("Route not found");
+  } catch (err) {
+    logger.error("botInvite", "Unexpected error", err as Error, { userId });
+    return internalError();
+  }
+};
+
+async function handleInvite(
+  userId: string,
+  botId: string,
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> {
+  // Validate bot exists and belongs to user
+  const bot = await getBot(userId, botId);
+  if (!bot) return notFound("Bot not found");
+
+  // Check if bot is already in a meeting
+  const activeSession = await getActiveBotSession(botId);
+  if (activeSession) {
+    return conflict("Bot is already in a meeting");
+  }
+
+  // Validate request body
+  const body = JSON.parse(event.body || "{}");
+  const parsed = inviteBotSchema.safeParse(body);
+  if (!parsed.success) {
+    return validationError(parsed.error.issues.map((i) => i.message).join(", "));
+  }
+
+  // Create bot via Recall.ai
+  const recallBot = await createRecallBot({
+    meeting_url: parsed.data.meetingUrl,
+    bot_name: bot.botName,
+    recording_mode: bot.isRecordingEnabled ? "speaker_view" : "audio_only",
+  });
+
+  const now = new Date().toISOString();
+  const sessionId = ulid();
+
+  // Create session record
+  const session = {
+    botId,
+    sessionId,
+    userId,
+    meetingUrl: parsed.data.meetingUrl,
+    recallBotId: recallBot.id,
+    status: "joining" as const,
+    joinedAt: now,
+    createdAt: now,
+  };
+  await putBotSession(session);
+
+  // Update bot status
+  await putBot({ ...bot, status: "in_meeting", updatedAt: now });
+
+  logger.info("inviteBot", "Bot invited to meeting", {
+    userId,
+    metadata: { botId, sessionId, meetingUrl: parsed.data.meetingUrl },
+  });
+
+  return success({
+    sessionId,
+    botId,
+    meetingUrl: parsed.data.meetingUrl,
+    status: "joining",
+    joinedAt: now,
+  });
+}
+
+async function handleLeave(
+  userId: string,
+  botId: string
+): Promise<APIGatewayProxyResult> {
+  const bot = await getBot(userId, botId);
+  if (!bot) return notFound("Bot not found");
+
+  const activeSession = await getActiveBotSession(botId);
+  if (!activeSession) {
+    return notFound("No active session found");
+  }
+
+  // Remove bot via Recall.ai
+  await removeRecallBot(activeSession.recallBotId);
+
+  const now = new Date().toISOString();
+
+  // Update session
+  await updateBotSession(botId, activeSession.sessionId, {
+    status: "leaving",
+    leftAt: now,
+    ttl: Math.floor(Date.now() / 1000) + 24 * 60 * 60, // 24h TTL
+  });
+
+  // Update bot status
+  await putBot({ ...bot, status: "idle", updatedAt: now });
+
+  logger.info("leaveBot", "Bot leaving meeting", {
+    userId,
+    metadata: { botId, sessionId: activeSession.sessionId },
+  });
+
+  return success({
+    sessionId: activeSession.sessionId,
+    status: "leaving",
+  });
+}
+
+async function handleGetSession(
+  userId: string,
+  botId: string
+): Promise<APIGatewayProxyResult> {
+  const bot = await getBot(userId, botId);
+  if (!bot) return notFound("Bot not found");
+
+  const activeSession = await getActiveBotSession(botId);
+
+  if (!activeSession) {
+    return success({ session: null });
+  }
+
+  return success({
+    sessionId: activeSession.sessionId,
+    meetingUrl: activeSession.meetingUrl,
+    status: activeSession.status,
+    joinedAt: activeSession.joinedAt,
+  });
+}

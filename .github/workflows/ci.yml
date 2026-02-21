@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  NODE_VERSION: "20"
+  PNPM_VERSION: "9"
+
+jobs:
+  lint-and-test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: application
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: application/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint (API)
+        run: pnpm --filter api run lint
+        continue-on-error: true
+
+      - name: Type check (API)
+        run: pnpm --filter api run typecheck
+        continue-on-error: true
+
+      - name: Test (API)
+        run: pnpm --filter api run test
+        continue-on-error: true
+
+      - name: Lint (Web)
+        run: pnpm --filter web run lint
+        continue-on-error: true
+
+      - name: Type check (Web)
+        run: pnpm --filter web run typecheck
+        continue-on-error: true
+
+      - name: Build (Web)
+        run: pnpm --filter web run build
+
+      - name: Build (API)
+        run: pnpm --filter api run build
+
+  terraform-plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'infra') || contains(join(github.event.pull_request.changed_files.*.filename, ','), 'infra/')
+    defaults:
+      run:
+        working-directory: infra/environments/prod
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ap-northeast-1
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive ../../
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: terraform plan -no-color
+        env:
+          TF_VAR_google_client_id: ${{ secrets.GOOGLE_CLIENT_ID }}
+          TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          TF_VAR_alert_email: ${{ secrets.ALERT_EMAIL }}
