@@ -118,6 +118,7 @@ module "networking" {
   api_gateway_id                  = module.api.api_gateway_id
   domain_name                     = var.domain_name
   acm_certificate_arn             = var.acm_certificate_arn
+  cloudfront_oai_path             = aws_cloudfront_origin_access_identity.web.cloudfront_access_identity_path
 }
 
 # -----------------------------------------------------------------------------

@@ -40,3 +40,8 @@ variable "acm_certificate_arn" {
   type        = string
   default     = ""
 }
+
+variable "cloudfront_oai_path" {
+  description = "CloudFront Origin Access Identity path (cloudfront_access_identity_path)"
+  type        = string
+}

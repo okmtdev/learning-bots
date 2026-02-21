@@ -3,13 +3,18 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
+import { useTranslations } from "next-intl";
+import { useLocaleRouter } from "@/lib/navigation";
 
 export default function LandingPage() {
   const { login, isLoggedIn } = useAuth();
+  const t = useTranslations("landing");
+  const tc = useTranslations("common");
+  const { replace } = useLocaleRouter();
 
   if (isLoggedIn) {
     if (typeof window !== "undefined") {
-      window.location.href = "/ja/dashboard";
+      replace("/dashboard");
     }
     return null;
   }
@@ -21,7 +26,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-primary-500">Colon</h1>
           <Button variant="ghost" onClick={login}>
-            ログイン
+            {tc("login")}
           </Button>
         </div>
       </header>
@@ -29,17 +34,14 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="flex-1 flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 py-20">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-            あなたのミーティングを、
-            <br />
-            もっと鮮やかに。
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 whitespace-pre-line">
+            {t("hero.title")}
           </h2>
           <p className="text-lg md:text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
-            Colonは、Google Meetに招待できるカスタマイズ可能なインタラクティブボットサービスです。
-            会議の要約、話題の提供、録画まで、あなた好みに設定できます。
+            {t("hero.subtitle")}
           </p>
           <Button size="lg" onClick={login}>
-            Googleでログイン
+            {t("hero.cta")}
           </Button>
         </div>
       </section>
@@ -51,28 +53,28 @@ export default function LandingPage() {
             <div className="text-center p-6">
               <div className="text-4xl mb-4">📝</div>
               <h3 className="text-xl font-semibold mb-3 text-gray-900">
-                会議の要約
+                {t("features.summary.title")}
               </h3>
               <p className="text-gray-600">
-                チャットの呼び出しに応じて、会議や会話の要約を自動で投稿します。
+                {t("features.summary.description")}
               </p>
             </div>
             <div className="text-center p-6">
               <div className="text-4xl mb-4">💡</div>
               <h3 className="text-xl font-semibold mb-3 text-gray-900">
-                話題の提供
+                {t("features.topics.title")}
               </h3>
               <p className="text-gray-600">
-                会話の流れからネクストアクションに向けた情報を自動で調べて話題を提供します。
+                {t("features.topics.description")}
               </p>
             </div>
             <div className="text-center p-6">
               <div className="text-4xl mb-4">🎥</div>
               <h3 className="text-xl font-semibold mb-3 text-gray-900">
-                録画機能
+                {t("features.recording.title")}
               </h3>
               <p className="text-gray-600">
-                重要な会議や1on1を録画して、いつでも見返すことができます。
+                {t("features.recording.description")}
               </p>
             </div>
           </div>
@@ -83,7 +85,7 @@ export default function LandingPage() {
       <section className="py-20 bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold text-gray-900 mb-12">
-            かんたん3ステップ
+            {t("steps.title")}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="flex flex-col items-center">
@@ -91,7 +93,7 @@ export default function LandingPage() {
                 1
               </div>
               <p className="text-lg font-medium text-gray-800">
-                Googleアカウントでログイン
+                {t("steps.step1")}
               </p>
             </div>
             <div className="flex flex-col items-center">
@@ -99,7 +101,7 @@ export default function LandingPage() {
                 2
               </div>
               <p className="text-lg font-medium text-gray-800">
-                ボットをカスタマイズ
+                {t("steps.step2")}
               </p>
             </div>
             <div className="flex flex-col items-center">
@@ -107,7 +109,7 @@ export default function LandingPage() {
                 3
               </div>
               <p className="text-lg font-medium text-gray-800">
-                ミーティングに招待
+                {t("steps.step3")}
               </p>
             </div>
           </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Header } from "@/components/layout/header";
 import { BotForm } from "@/components/features/bot-form";
 import { useBot, updateBot, deleteBot } from "@/hooks/use-bots";
@@ -10,23 +10,28 @@ import { Dialog } from "@/components/ui/dialog";
 import { useState } from "react";
 import Link from "next/link";
 import type { Bot } from "@/types";
+import { useTranslations } from "next-intl";
+import { useLocalePath, useLocaleRouter } from "@/lib/navigation";
 
 export default function BotDetailContent() {
   const searchParams = useSearchParams();
   const botId = searchParams.get("id") ?? "";
-  const router = useRouter();
   const { bot, isLoading } = useBot(botId || null);
   const { showToast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const t = useTranslations("bot");
+  const tc = useTranslations("common");
+  const { localePath } = useLocalePath();
+  const { push } = useLocaleRouter();
 
   const handleSubmit = async (values: Partial<Bot>) => {
     setIsSubmitting(true);
     try {
       await updateBot(botId, values);
-      showToast("ボットを更新しました", "success");
+      showToast(t("updated"), "success");
     } catch {
-      showToast("更新に失敗しました", "error");
+      showToast(tc("updateFailed"), "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -35,10 +40,10 @@ export default function BotDetailContent() {
   const handleDelete = async () => {
     try {
       await deleteBot(botId);
-      showToast("ボットを削除しました", "success");
-      router.push("../dashboard");
+      showToast(t("deleted"), "success");
+      push("/dashboard");
     } catch {
-      showToast("削除に失敗しました", "error");
+      showToast(tc("deleteFailed"), "error");
     } finally {
       setShowDelete(false);
     }
@@ -49,7 +54,7 @@ export default function BotDetailContent() {
       <>
         <Header />
         <div className="max-w-2xl mx-auto px-4 py-12 text-center text-gray-500">
-          ボットIDが指定されていません
+          {t("noBotId")}
         </div>
       </>
     );
@@ -60,7 +65,7 @@ export default function BotDetailContent() {
       <>
         <Header />
         <div className="max-w-2xl mx-auto px-4 py-12 text-center text-gray-500">
-          読み込み中...
+          {tc("loading")}
         </div>
       </>
     );
@@ -71,7 +76,7 @@ export default function BotDetailContent() {
       <>
         <Header />
         <div className="max-w-2xl mx-auto px-4 py-12 text-center text-gray-500">
-          ボットが見つかりません
+          {t("notFound")}
         </div>
       </>
     );
@@ -83,10 +88,10 @@ export default function BotDetailContent() {
       <main className="max-w-2xl mx-auto px-4 py-8">
         <div className="mb-6 flex items-center justify-between">
           <Link
-            href="../dashboard"
+            href={localePath("/dashboard")}
             className="text-primary-500 hover:text-primary-600 text-sm"
           >
-            ← 戻る
+            {tc("back")}
           </Link>
           <div className="flex items-center gap-2">
             <span
@@ -96,13 +101,13 @@ export default function BotDetailContent() {
                   : "bg-green-100 text-green-800"
               }`}
             >
-              {bot.status === "in_meeting" ? "ミーティング参加中" : "待機中"}
+              {t(`status.${bot.status}`)}
             </span>
           </div>
         </div>
 
         <h2 className="text-2xl font-bold text-gray-900 mb-8">
-          ボットを編集
+          {t("edit")}
         </h2>
 
         <BotForm
@@ -113,20 +118,21 @@ export default function BotDetailContent() {
 
         <div className="mt-8 pt-8 border-t border-gray-200">
           <Button variant="danger" onClick={() => setShowDelete(true)}>
-            ボットを削除
+            {t("delete")}
           </Button>
         </div>
       </main>
 
       <Dialog
         open={showDelete}
-        title="ボットを削除"
-        confirmLabel="削除する"
+        title={t("delete")}
+        confirmLabel={t("deleteAction")}
+        cancelLabel={tc("cancel")}
         variant="danger"
         onConfirm={handleDelete}
         onClose={() => setShowDelete(false)}
       >
-        本当に削除しますか？この操作は取り消せません。
+        {t("deleteConfirm")}
       </Dialog>
     </>
   );

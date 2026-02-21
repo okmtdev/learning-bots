@@ -8,13 +8,6 @@ locals {
 }
 
 # ============================================================
-# CloudFront Origin Access Identity
-# ============================================================
-resource "aws_cloudfront_origin_access_identity" "web" {
-  comment = "${var.project}-${var.environment} web OAI"
-}
-
-# ============================================================
 # CloudFront Distribution
 # ============================================================
 resource "aws_cloudfront_distribution" "main" {
@@ -34,7 +27,7 @@ resource "aws_cloudfront_distribution" "main" {
     origin_id   = local.s3_origin_id
 
     s3_origin_config {
-      origin_access_identity = aws_cloudfront_origin_access_identity.web.cloudfront_access_identity_path
+      origin_access_identity = var.cloudfront_oai_path
     }
   }
 

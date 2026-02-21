@@ -11,6 +11,8 @@ import { Dialog } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
 import Link from "next/link";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
+import { useLocalePath } from "@/lib/navigation";
 
 export default function DashboardPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -18,13 +20,17 @@ export default function DashboardPage() {
   const { recordings, isLoading: recordingsLoading } = useRecordings({ limit: 3 });
   const { showToast } = useToast();
   const [deletingBotId, setDeletingBotId] = useState<string | null>(null);
+  const t = useTranslations("dashboard");
+  const tb = useTranslations("bot");
+  const tc = useTranslations("common");
+  const { localePath } = useLocalePath();
 
   if (authLoading) {
     return (
       <>
         <Header />
         <div className="max-w-6xl mx-auto px-4 py-12 text-center text-gray-500">
-          読み込み中...
+          {tc("loading")}
         </div>
       </>
     );
@@ -35,9 +41,9 @@ export default function DashboardPage() {
     try {
       await deleteBot(deletingBotId);
       await mutateBots();
-      showToast("ボットを削除しました", "success");
+      showToast(tb("deleted"), "success");
     } catch {
-      showToast("削除に失敗しました", "error");
+      showToast(tc("deleteFailed"), "error");
     } finally {
       setDeletingBotId(null);
     }
@@ -49,30 +55,30 @@ export default function DashboardPage() {
       <main className="max-w-6xl mx-auto px-4 py-8">
         {/* Greeting */}
         <h2 className="text-2xl font-bold text-gray-900 mb-8">
-          こんにちは、{user?.displayName || "ゲスト"}さん！
+          {t("greeting", { name: user?.displayName || t("guestName") })}
         </h2>
 
         {/* Bots Section */}
         <div className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-semibold text-gray-800">
-              あなたのボット
+              {t("yourBots")}
             </h3>
-            <Link href="/ja/bots/new">
-              <Button size="sm">+ 新しいボット</Button>
+            <Link href={localePath("/bots/new")}>
+              <Button size="sm">{t("newBot")}</Button>
             </Link>
           </div>
 
           {botsLoading ? (
-            <p className="text-gray-500">読み込み中...</p>
+            <p className="text-gray-500">{tc("loading")}</p>
           ) : bots.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
               <div className="text-4xl mb-4">🤖</div>
               <p className="text-gray-500 mb-4">
-                まだボットがありません。最初のボットを作成しましょう！
+                {t("noBots")}
               </p>
-              <Link href="/ja/bots/new">
-                <Button>ボットを作成</Button>
+              <Link href={localePath("/bots/new")}>
+                <Button>{t("createBot")}</Button>
               </Link>
             </div>
           ) : (
@@ -92,20 +98,20 @@ export default function DashboardPage() {
         <div>
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-semibold text-gray-800">
-              最近の録画
+              {t("recentRecordings")}
             </h3>
-            <Link href="/ja/recordings" className="text-primary-500 hover:text-primary-600 text-sm font-medium">
-              すべての録画を見る →
+            <Link href={localePath("/recordings")} className="text-primary-500 hover:text-primary-600 text-sm font-medium">
+              {t("viewAll")}
             </Link>
           </div>
 
           {recordingsLoading ? (
-            <p className="text-gray-500">読み込み中...</p>
+            <p className="text-gray-500">{tc("loading")}</p>
           ) : recordings.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
               <div className="text-4xl mb-4">📹</div>
               <p className="text-gray-500">
-                まだ録画がありません。ボットを招待して録画を始めましょう！
+                {t("noRecordings")}
               </p>
             </div>
           ) : (
@@ -121,13 +127,14 @@ export default function DashboardPage() {
       {/* Delete Confirmation */}
       <Dialog
         open={!!deletingBotId}
-        title="ボットを削除"
-        confirmLabel="削除する"
+        title={tb("delete")}
+        confirmLabel={tb("deleteAction")}
+        cancelLabel={tc("cancel")}
         variant="danger"
         onConfirm={handleDeleteBot}
         onClose={() => setDeletingBotId(null)}
       >
-        本当に削除しますか？この操作は取り消せません。
+        {tb("deleteConfirm")}
       </Dialog>
     </>
   );
