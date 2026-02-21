@@ -4,19 +4,23 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { Bot } from "@/types";
+import { useTranslations } from "next-intl";
+import { useLocalePath } from "@/lib/navigation";
 
 interface BotCardProps {
   bot: Bot;
   onDelete: (botId: string) => void;
 }
 
-const statusConfig: Record<Bot["status"], { label: string; className: string }> = {
-  idle: { label: "Idle", className: "bg-green-100 text-green-800" },
-  in_meeting: { label: "In Meeting", className: "bg-blue-100 text-blue-800" },
-};
-
 export const BotCard = ({ bot, onDelete }: BotCardProps) => {
-  const status = statusConfig[bot.status];
+  const t = useTranslations("bot");
+  const tc = useTranslations("common");
+  const { localePath } = useLocalePath();
+
+  const statusClassName =
+    bot.status === "in_meeting"
+      ? "bg-blue-100 text-blue-800"
+      : "bg-green-100 text-green-800";
 
   return (
     <Card className="flex flex-col gap-4">
@@ -31,16 +35,16 @@ export const BotCard = ({ bot, onDelete }: BotCardProps) => {
           </h3>
         </div>
         <span
-          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${status.className}`}
+          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${statusClassName}`}
         >
-          {status.label}
+          {t(`status.${bot.status}`)}
         </span>
       </div>
 
       {/* Labels */}
       <div className="flex flex-wrap gap-3">
         <span className="inline-flex items-center gap-1 text-sm text-gray-600">
-          Interactive:
+          {t("interactive")}:
           <span
             className={
               bot.isInteractiveEnabled
@@ -48,11 +52,11 @@ export const BotCard = ({ bot, onDelete }: BotCardProps) => {
                 : "font-semibold text-gray-400"
             }
           >
-            {bot.isInteractiveEnabled ? "ON" : "OFF"}
+            {bot.isInteractiveEnabled ? tc("on") : tc("off")}
           </span>
         </span>
         <span className="inline-flex items-center gap-1 text-sm text-gray-600">
-          Recording:
+          {t("recording")}:
           <span
             className={
               bot.isRecordingEnabled
@@ -60,21 +64,21 @@ export const BotCard = ({ bot, onDelete }: BotCardProps) => {
                 : "font-semibold text-gray-400"
             }
           >
-            {bot.isRecordingEnabled ? "ON" : "OFF"}
+            {bot.isRecordingEnabled ? tc("on") : tc("off")}
           </span>
         </span>
       </div>
 
       {/* Actions */}
       <div className="flex flex-wrap gap-2 border-t border-gray-100 pt-4">
-        <Link href={`bots/detail?id=${bot.botId}`}>
+        <Link href={localePath(`/bots/detail?id=${bot.botId}`)}>
           <Button variant="ghost" size="sm">
-            編集
+            {tc("edit")}
           </Button>
         </Link>
-        <Link href={`bots/invite?id=${bot.botId}`}>
+        <Link href={localePath(`/bots/invite?id=${bot.botId}`)}>
           <Button variant="secondary" size="sm">
-            招待
+            {t("invite")}
           </Button>
         </Link>
         <Button
@@ -82,7 +86,7 @@ export const BotCard = ({ bot, onDelete }: BotCardProps) => {
           size="sm"
           onClick={() => onDelete(bot.botId)}
         >
-          削除
+          {tc("delete")}
         </Button>
       </div>
     </Card>

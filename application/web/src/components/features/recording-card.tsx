@@ -3,32 +3,16 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import type { Recording } from "@/types";
+import { useTranslations, useLocale } from "next-intl";
+import { useLocalePath } from "@/lib/navigation";
 
 interface RecordingCardProps {
   recording: Recording;
 }
 
-const statusConfig: Record<
-  Recording["status"],
-  { label: string; className: string }
-> = {
-  processing: {
-    label: "処理中",
-    className: "bg-yellow-100 text-yellow-800",
-  },
-  ready: { label: "完了", className: "bg-green-100 text-green-800" },
-  failed: { label: "失敗", className: "bg-red-100 text-red-800" },
-};
-
-function formatDuration(seconds?: number): string {
-  if (seconds == null) return "-";
-  const minutes = Math.round(seconds / 60);
-  return `${minutes}分`;
-}
-
-function formatDateTime(iso: string): string {
+function formatDateTime(iso: string, locale: string): string {
   const date = new Date(iso);
-  return date.toLocaleString("ja-JP", {
+  return date.toLocaleString(locale, {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -38,10 +22,31 @@ function formatDateTime(iso: string): string {
 }
 
 export const RecordingCard = ({ recording }: RecordingCardProps) => {
+  const t = useTranslations("recording");
+  const locale = useLocale();
+  const { localePath } = useLocalePath();
+
+  const statusConfig: Record<
+    Recording["status"],
+    { label: string; className: string }
+  > = {
+    processing: {
+      label: t("status.processing"),
+      className: "bg-yellow-100 text-yellow-800",
+    },
+    ready: { label: t("status.ready"), className: "bg-green-100 text-green-800" },
+    failed: { label: t("status.failed"), className: "bg-red-100 text-red-800" },
+  };
+
   const status = statusConfig[recording.status];
 
+  const durationMinutes =
+    recording.durationSeconds != null
+      ? Math.round(recording.durationSeconds / 60)
+      : null;
+
   return (
-    <Link href={`recordings/detail?id=${recording.recordingId}`}>
+    <Link href={localePath(`/recordings/detail?id=${recording.recordingId}`)}>
       <Card className="transition-shadow hover:shadow-md">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -63,21 +68,23 @@ export const RecordingCard = ({ recording }: RecordingCardProps) => {
         {/* Details */}
         <dl className="mt-4 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
           <div>
-            <dt className="text-gray-500">Meeting URL</dt>
+            <dt className="text-gray-500">{t("meetingUrl")}</dt>
             <dd className="truncate font-medium text-gray-800">
               {recording.meetingUrl}
             </dd>
           </div>
           <div>
-            <dt className="text-gray-500">開始日時</dt>
+            <dt className="text-gray-500">{t("startedAt")}</dt>
             <dd className="font-medium text-gray-800">
-              {formatDateTime(recording.startedAt)}
+              {formatDateTime(recording.startedAt, locale)}
             </dd>
           </div>
           <div>
-            <dt className="text-gray-500">録画時間</dt>
+            <dt className="text-gray-500">{t("duration")}</dt>
             <dd className="font-medium text-gray-800">
-              {formatDuration(recording.durationSeconds)}
+              {durationMinutes != null
+                ? t("durationMinutes", { min: durationMinutes })
+                : "-"}
             </dd>
           </div>
         </dl>

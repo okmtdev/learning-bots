@@ -1,7 +1,13 @@
 import { Suspense } from "react";
+import { unstable_setRequestLocale } from "next-intl/server";
 import AuthCallbackContent from "./content";
 
-export default function AuthCallbackPage() {
+export default function AuthCallbackPage({
+  params: { locale },
+}: {
+  params: { locale: string };
+}) {
+  unstable_setRequestLocale(locale);
   return (
     <Suspense
       fallback={

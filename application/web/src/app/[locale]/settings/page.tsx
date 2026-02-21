@@ -10,6 +10,8 @@ import { useToast } from "@/components/ui/toast";
 import { api } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations, useLocale } from "next-intl";
+import { localePath } from "@/lib/navigation";
 
 interface UserSettings {
   language: string;
@@ -20,8 +22,11 @@ export default function SettingsPage() {
   const { user, logout } = useAuth();
   const { showToast } = useToast();
   const router = useRouter();
+  const t = useTranslations("settings");
+  const tc = useTranslations("common");
+  const currentLocale = useLocale();
   const [settings, setSettings] = useState<UserSettings>({
-    language: "ja",
+    language: currentLocale,
     notificationsEnabled: true,
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -43,9 +48,14 @@ export default function SettingsPage() {
     setIsSaving(true);
     try {
       await api.put("/settings", settings);
-      showToast("設定を保存しました", "success");
+      showToast(t("saved"), "success");
+
+      // If language changed, navigate to new locale
+      if (settings.language !== currentLocale) {
+        router.push(localePath("/settings", settings.language));
+      }
     } catch {
-      showToast("保存に失敗しました", "error");
+      showToast(tc("saveFailed"), "error");
     } finally {
       setIsSaving(false);
     }
@@ -54,11 +64,11 @@ export default function SettingsPage() {
   const handleDeleteAccount = async () => {
     try {
       await api.delete("/settings/account");
-      showToast("アカウントを削除しました", "success");
+      showToast(t("deleteAccount"), "success");
       logout();
-      router.push("/ja");
+      router.push(localePath("/", currentLocale));
     } catch {
-      showToast("削除に失敗しました", "error");
+      showToast(tc("deleteFailed"), "error");
     } finally {
       setShowDeleteAccount(false);
     }
@@ -68,10 +78,10 @@ export default function SettingsPage() {
     <>
       <Header />
       <main className="max-w-2xl mx-auto px-4 py-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-8">設定</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-8">{t("title")}</h2>
 
         {/* User Info */}
-        <Card title="アカウント情報">
+        <Card title={t("account")}>
           <div className="space-y-3">
             <div className="flex items-center gap-4">
               {user?.avatarUrl && (
@@ -90,11 +100,11 @@ export default function SettingsPage() {
         </Card>
 
         {/* Language */}
-        <Card title="表示設定">
+        <Card title={t("displaySettings")}>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                言語
+                {t("language")}
               </label>
               <select
                 value={settings.language}
@@ -108,7 +118,7 @@ export default function SettingsPage() {
               </select>
             </div>
             <Toggle
-              label="通知を受け取る"
+              label={t("notifications")}
               checked={settings.notificationsEnabled}
               onChange={(e) =>
                 setSettings({ ...settings, notificationsEnabled: e.target.checked })
@@ -117,35 +127,35 @@ export default function SettingsPage() {
           </div>
           <div className="mt-6 flex justify-end">
             <Button onClick={handleSave} loading={isSaving}>
-              保存
+              {tc("save")}
             </Button>
           </div>
         </Card>
 
         {/* Danger Zone */}
-        <Card title="危険な操作">
+        <Card title={t("dangerZone")}>
           <p className="text-sm text-gray-600 mb-4">
-            アカウントを削除すると、すべてのデータ（ボット、録画、設定）が完全に削除されます。
-            この操作は取り消せません。
+            {t("dangerZoneDescription")}
           </p>
           <Button
             variant="danger"
             onClick={() => setShowDeleteAccount(true)}
           >
-            アカウントを削除
+            {t("deleteAccount")}
           </Button>
         </Card>
       </main>
 
       <Dialog
         open={showDeleteAccount}
-        title="アカウントを削除"
-        confirmLabel="完全に削除する"
+        title={t("deleteAccountTitle")}
+        confirmLabel={t("deleteAccountAction")}
+        cancelLabel={tc("cancel")}
         variant="danger"
         onConfirm={handleDeleteAccount}
         onClose={() => setShowDeleteAccount(false)}
       >
-        本当にアカウントを削除しますか？すべてのデータが完全に消去されます。
+        {t("deleteAccountConfirm")}
       </Dialog>
     </>
   );

@@ -13,7 +13,7 @@ locals {
 resource "aws_cloudfront_distribution" "main" {
   enabled             = true
   is_ipv6_enabled     = true
-  default_root_object = "index.html"
+  default_root_object = "ja/index.html"
   comment             = "${var.project}-${var.environment} distribution"
   price_class         = "PriceClass_200"
 

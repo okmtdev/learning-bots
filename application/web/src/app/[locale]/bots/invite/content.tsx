@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useState } from "react";
 import Link from "next/link";
+import { useTranslations, useLocale } from "next-intl";
+import { useLocalePath } from "@/lib/navigation";
 
 export default function BotInviteContent() {
   const searchParams = useSearchParams();
@@ -19,24 +21,29 @@ export default function BotInviteContent() {
   const [isInviting, setIsInviting] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const [urlError, setUrlError] = useState("");
+  const t = useTranslations("invite");
+  const tb = useTranslations("bot");
+  const tc = useTranslations("common");
+  const locale = useLocale();
+  const { localePath } = useLocalePath();
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     setUrlError("");
 
     if (!meetingUrl.startsWith("https://meet.google.com/")) {
-      setUrlError("有効な Google Meet のURLを入力してください");
+      setUrlError(t("urlError"));
       return;
     }
 
     setIsInviting(true);
     try {
       await inviteBot(botId, meetingUrl);
-      showToast("ボットを招待しました", "success");
+      showToast(t("invited"), "success");
       setMeetingUrl("");
       await mutate();
     } catch {
-      showToast("招待に失敗しました", "error");
+      showToast(tc("inviteFailed"), "error");
     } finally {
       setIsInviting(false);
     }
@@ -46,10 +53,10 @@ export default function BotInviteContent() {
     setIsLeaving(true);
     try {
       await leaveBot(botId);
-      showToast("ボットを退出させました", "success");
+      showToast(t("left"), "success");
       await mutate();
     } catch {
-      showToast("退出に失敗しました", "error");
+      showToast(tc("leaveFailed"), "error");
     } finally {
       setIsLeaving(false);
     }
@@ -60,7 +67,7 @@ export default function BotInviteContent() {
       <>
         <Header />
         <div className="max-w-2xl mx-auto px-4 py-12 text-center text-gray-500">
-          ボットIDが指定されていません
+          {tb("noBotId")}
         </div>
       </>
     );
@@ -71,7 +78,7 @@ export default function BotInviteContent() {
       <>
         <Header />
         <div className="max-w-2xl mx-auto px-4 py-12 text-center text-gray-500">
-          読み込み中...
+          {tc("loading")}
         </div>
       </>
     );
@@ -82,7 +89,7 @@ export default function BotInviteContent() {
       <>
         <Header />
         <div className="max-w-2xl mx-auto px-4 py-12 text-center text-gray-500">
-          ボットが見つかりません
+          {tb("notFound")}
         </div>
       </>
     );
@@ -94,39 +101,39 @@ export default function BotInviteContent() {
       <main className="max-w-2xl mx-auto px-4 py-8">
         <div className="mb-6">
           <Link
-            href="../dashboard"
+            href={localePath("/dashboard")}
             className="text-primary-500 hover:text-primary-600 text-sm"
           >
-            ← 戻る
+            {tc("back")}
           </Link>
         </div>
 
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          ボットを招待
+          {t("title")}
         </h2>
         <p className="text-gray-600 mb-8">
-          🤖 {bot.botName} をミーティングに招待
+          {t("description", { name: bot.botName })}
         </p>
 
         {bot.status !== "in_meeting" && (
-          <Card title="ミーティングに招待">
+          <Card title={t("inviteToMeeting")}>
             <form onSubmit={handleInvite} className="space-y-4">
               <Input
-                label="Google Meet URL"
-                placeholder="https://meet.google.com/xxx-xxxx-xxx"
+                label={t("meetingUrl")}
+                placeholder={t("meetingUrlPlaceholder")}
                 value={meetingUrl}
                 onChange={(e) => setMeetingUrl(e.target.value)}
                 error={urlError}
-                helperText="Google Meet のURLを貼り付けてください"
+                helperText={t("meetingUrlHelp")}
               />
               <div className="flex justify-end gap-3">
-                <Link href="../dashboard">
+                <Link href={localePath("/dashboard")}>
                   <Button variant="ghost" type="button">
-                    キャンセル
+                    {tc("cancel")}
                   </Button>
                 </Link>
                 <Button type="submit" loading={isInviting}>
-                  招待する
+                  {t("submit")}
                 </Button>
               </div>
             </form>
@@ -134,14 +141,14 @@ export default function BotInviteContent() {
         )}
 
         {bot.currentSession && (
-          <Card title="現在参加中のミーティング">
+          <Card title={t("currentSession")}>
             <div className="space-y-3">
               <p className="text-sm text-gray-600">
                 {bot.currentSession.meetingUrl}
               </p>
               <p className="text-sm text-gray-500">
-                参加開始:{" "}
-                {new Date(bot.currentSession.joinedAt).toLocaleString("ja-JP")}
+                {t("joinedAt")}:{" "}
+                {new Date(bot.currentSession.joinedAt).toLocaleString(locale)}
               </p>
               <Button
                 variant="danger"
@@ -149,7 +156,7 @@ export default function BotInviteContent() {
                 onClick={handleLeave}
                 loading={isLeaving}
               >
-                退出させる
+                {t("leave")}
               </Button>
             </div>
           </Card>
