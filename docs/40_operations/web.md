@@ -16,7 +16,7 @@ Colon（コロン）Webアプリケーションのビルド、デプロイ、運
 | ビルド方式 | Static Export (`next export`) |
 | 言語 | TypeScript |
 | スタイリング | Tailwind CSS |
-| 国際化 | next-intl (ja / en) |
+| 国際化 | next-intl（依存関係のみ。翻訳ファイルは存在するがUIは日本語ハードコード） |
 | 状態管理 | React Context + SWR |
 | パッケージマネージャ | pnpm |
 | テスト | Vitest + React Testing Library |
@@ -42,6 +42,10 @@ application/
 │   │   ├── app/                  # Next.js App Router
 │   │   │   ├── [locale]/         # 国際化ルート（ja/en の2ロケール）
 │   │   │   │   ├── page.tsx      # ランディングページ
+│   │   │   │   ├── layout.tsx    # ロケールレイアウト（サーバー）
+│   │   │   │   ├── layout-client.tsx  # クライアントレイアウト（AuthProvider, ToastProvider）
+│   │   │   │   ├── auth/
+│   │   │   │   │   └── callback/ # OAuth コールバック処理
 │   │   │   │   ├── dashboard/
 │   │   │   │   ├── bots/
 │   │   │   │   │   ├── new/      # ボット作成
@@ -60,9 +64,9 @@ application/
 │   │   │   └── features/         # 機能別コンポーネント
 │   │   ├── hooks/                # カスタムフック
 │   │   ├── lib/                  # ユーティリティ
-│   │   │   ├── api.ts            # APIクライアント
-│   │   │   ├── auth.ts           # 認証ヘルパー
-│   │   │   └── constants.ts
+│   │   │   ├── api.ts            # APIクライアント (ApiClient クラス)
+│   │   │   ├── auth.ts           # 認証ヘルパー (Cognito OAuth2 直接呼び出し)
+│   │   │   └── constants.ts      # 定数、ラベルマップ、バリデーション定数
 │   │   ├── messages/             # 国際化メッセージ
 │   │   │   ├── ja.json
 │   │   │   └── en.json
@@ -82,7 +86,9 @@ application/
 │   │   │   └── user-settings.ts
 │   │   ├── lib/                  # 共通ライブラリ
 │   │   │   ├── dynamodb.ts       # DynamoDB クライアント
+│   │   │   ├── logger.ts         # 構造化ロガー (JSON stdout)
 │   │   │   ├── recall.ts         # Recall.ai クライアント
+│   │   │   ├── response.ts       # HTTP レスポンスヘルパー
 │   │   │   ├── s3.ts             # S3 クライアント
 │   │   │   └── validators.ts     # Zod スキーマ
 │   │   └── types/                # 型定義
@@ -163,22 +169,24 @@ Push to main (infra/ changes) → GitHub Actions → terraform plan → terrafor
 
 ### 5.1 監視項目
 
-| 項目 | メトリクス | 閾値 | 通知 |
+| 項目 | メトリクス | 閾値 | 実装状況 |
 |------|-----------|------|------|
-| Lambda エラー | Errors / Invocations | > 5% | メール |
-| Lambda 所要時間 | Duration p99 | > タイムアウトの80% | メール |
-| API 5xx | 5XXError | > 10/分 | メール |
-| API レイテンシ | Latency p95 | > 3秒 | メール |
-| DynamoDB スロットリング | ThrottledRequests | > 0 | メール |
+| Lambda エラー | Errors Sum | > 0 | ✓ 実装済み |
+| API 5xx | 5XXError | > 0 | ✓ 実装済み |
+| Lambda 所要時間 | Duration p99 | > タイムアウトの80% | ✗ 未実装 |
+| API レイテンシ | Latency p95 | > 3秒 | ✗ 未実装 |
+| DynamoDB スロットリング | ThrottledRequests | > 0 | ✗ 未実装 |
 | S3 ストレージ | BucketSizeBytes | 情報のみ | - |
 
 ### 5.2 ログ
 
 | コンポーネント | ログ出力先 | 保持期間 |
 |---------------|-----------|---------|
-| Lambda | CloudWatch Logs | 30日 |
-| API Gateway | CloudWatch Logs | 30日 |
+| Lambda | CloudWatch Logs | 無期限（保存期限未設定） |
+| API Gateway | CloudWatch Logs | 無期限（保存期限未設定） |
 | CloudFront | S3 (アクセスログ) | 90日 |
+
+> **注意**: CloudWatch Logs の保存期限は Terraform で管理されておらず、Lambda 自動作成のロググループは無期限保存となる。コスト管理のため保存期限の設定を推奨。
 
 ### 5.3 ログフォーマット（Lambda）
 
@@ -236,7 +244,9 @@ Push to main (infra/ changes) → GitHub Actions → terraform plan → terrafor
 
 ## 8. コスト管理
 
-### 8.1 AWS Budgets
+### 8.1 AWS Budgets（未実装）
+
+> AWS Budgets は Terraform では管理されていない。手動での設定が必要。
 
 | 項目 | 設定値 |
 |------|--------|

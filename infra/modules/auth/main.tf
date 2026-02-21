@@ -87,6 +87,10 @@ resource "aws_cognito_identity_provider" "google" {
     username = "sub"
     picture  = "picture"
   }
+
+  lifecycle {
+    ignore_changes = [provider_details]
+  }
 }
 
 # ============================================================

@@ -102,13 +102,15 @@ terraform {
 | SSL証明書 | ACM (us-east-1) |
 | WAF | 無し（初期スコープ、コスト優先） |
 
-#### Route 53（オプション）
+#### Route 53（オプション・未実装）
 
 | 項目 | 内容 |
 |------|------|
 | ドメイン | `colon.example.com`（要取得） |
 | レコード | A (Alias) → CloudFront |
 | API | `colon.example.com/api/*` → CloudFront → API Gateway |
+
+> CloudFront の `domain_name` 変数によるカスタムドメイン対応は任意。Route 53 リソースは Terraform に未定義。
 
 ### 4.2 認証（modules/auth）
 
@@ -134,17 +136,17 @@ terraform {
 | ステージ | `v1` |
 | Authorizer | Cognito User Pool Authorizer |
 | スロットリング | 100 req/sec (バースト: 200) |
-| CORS | CloudFront ドメインのみ |
+| CORS | なし（CloudFront 同一オリジンプロキシで対応） |
 
 #### Lambda Functions
 
 | 関数名 | メモリ | タイムアウト | 説明 |
 |--------|--------|-------------|------|
-| `colon-bot-crud` | 256 MB | 10秒 | ボット CRUD |
-| `colon-bot-invite` | 256 MB | 30秒 | ボット招待・退出 |
-| `colon-recording-crud` | 256 MB | 10秒 | 録画 CRUD |
-| `colon-recording-webhook` | 512 MB | 60秒 | Webhook 受信・録画保存 |
-| `colon-user-settings` | 256 MB | 10秒 | ユーザー設定 |
+| `colon-bot-crud-{env}` | 256 MB | 10秒 | ボット CRUD |
+| `colon-bot-invite-{env}` | 256 MB | 30秒 | ボット招待・退出 |
+| `colon-recording-crud-{env}` | 256 MB | 10秒 | 録画 CRUD |
+| `colon-recording-webhook-{env}` | 512 MB | 60秒 | Webhook 受信・録画保存 |
+| `colon-user-settings-{env}` | 256 MB | 10秒 | ユーザー設定 |
 
 **共通設定:**
 | 項目 | 設定値 |
@@ -178,12 +180,15 @@ terraform {
 
 #### CloudWatch Alarms
 
-| アラーム | 条件 | 通知先 |
-|---------|------|--------|
-| Lambda エラー率 | エラー率 > 5% (5分間) | SNS → メール |
-| Lambda 実行時間 | p99 > タイムアウトの80% | SNS → メール |
-| API Gateway 5xx | 5xxエラー > 10/分 | SNS → メール |
-| DynamoDB スロットリング | ThrottledRequests > 0 | SNS → メール |
+| アラーム | 条件 | 通知先 | 実装状況 |
+|---------|------|--------|------|
+| Lambda エラー数 | Errors Sum > 0 (5分間) | SNS → メール | ✓ 実装済み（各Lambda関数毎） |
+| API Gateway 5xx | 5xxエラー > 0 (5分間) | SNS → メール | ✓ 実装済み |
+| Lambda 実行時間 | p99 > タイムアウトの80% | SNS → メール | ✗ 未実装 |
+| DynamoDB スロットリング | ThrottledRequests > 0 | SNS → メール | ✗ 未実装 |
+| API レイテンシ | p95 > 3秒 | SNS → メール | ✗ 未実装 |
+
+> **注意**: CloudWatch Logs の保存期限設定は Terraform で管理されていない。Lambda 自動作成のロググループは無期限保存となる。
 
 ---
 
@@ -191,11 +196,13 @@ terraform {
 
 | シークレット | 管理場所 | 説明 |
 |---|---|---|
-| Google OAuth Client ID | SSM Parameter Store | Cognito IdP 設定用 |
-| Google OAuth Client Secret | SSM Parameter Store (SecureString) | Cognito IdP 設定用 |
+| Google OAuth Client ID | Terraform 変数 | Cognito IdP 設定用 |
+| Google OAuth Client Secret | Terraform 変数 (sensitive) | Cognito IdP 設定用 |
 | Recall.ai API Key | SSM Parameter Store (SecureString) | Recall.ai API 認証 |
-| Recall.ai Webhook Secret | SSM Parameter Store (SecureString) | Webhook 検証用 |
+| Recall.ai Webhook Secret | SSM Parameter Store (SecureString) | Svix 署名検証用 |
 | CloudFront Signing Key | SSM Parameter Store (SecureString) | 署名付きURL生成用 |
+
+> **注意**: SSM パラメータは Terraform では作成されず、手動でプロビジョニングが必要。
 
 SSM Parameter Store のパス規約:
 ```
@@ -216,11 +223,13 @@ SSM Parameter Store のパス規約:
 
 | 関数 | 必要な権限 |
 |------|-----------|
-| `colon-bot-crud` | DynamoDB (bots テーブル R/W) |
+| `colon-bot-crud` | DynamoDB (bots テーブル R/W, bot-sessions テーブル R) |
 | `colon-bot-invite` | DynamoDB (bots, bot-sessions R/W), SSM (Recall API Key 読取) |
-| `colon-recording-crud` | DynamoDB (recordings R/W), S3 (recordings 読取/削除), CloudFront (署名生成) |
-| `colon-recording-webhook` | DynamoDB (recordings, bots R/W), S3 (recordings 書込), SSM (Recall keys 読取) |
-| `colon-user-settings` | DynamoDB (users R/W), Cognito (ユーザー削除) |
+| `colon-recording-crud` | DynamoDB (recordings R/W), S3 (recordings 読取/削除) |
+| `colon-recording-webhook` | DynamoDB (recordings, bots, bot-sessions R/W), S3 (recordings 書込), SSM (Recall keys 読取) |
+| `colon-user-settings` | DynamoDB (users, bots, recordings R/W), S3 (recordings 削除), Cognito (ユーザー削除) |
+
+> **注意**: `colon-recording-crud` には CloudFront 署名付きURL生成用の権限（SSM 署名キー読取）が未付与。
 
 ---
 
@@ -237,10 +246,12 @@ SSM Parameter Store のパス規約:
 
 | ワークフロー | トリガー | 処理内容 |
 |---|---|---|
-| `ci.yml` | PR作成/更新 | Lint, Test, Terraform Plan |
-| `deploy-infra.yml` | main マージ (infra/ 変更時) | Terraform Apply |
-| `deploy-app.yml` | main マージ (application/ 変更時) | Build & S3 デプロイ & CloudFront キャッシュ無効化 |
+| `ci.yml` | PR作成/更新 | Lint, Test (`continue-on-error: true`), Terraform Plan (条件付き) |
+| `deploy-infra.yml` | main マージ (infra/ 変更時) | Terraform Apply (`-auto-approve`)、`production` 環境 |
+| `deploy-app.yml` | main マージ (application/web/ 変更時) | Build & S3 デプロイ & CloudFront キャッシュ無効化 |
 | `deploy-lambda.yml` | main マージ (application/api/ 変更時) | Lambda コード更新 |
+
+> **注意**: `deploy-lambda.yml` の関数名が `colon-${func}` となっているが、Terraform では `colon-${func}-{env}` で作成されるため、デプロイが失敗する可能性がある。
 
 ### 7.2 OIDC 認証
 

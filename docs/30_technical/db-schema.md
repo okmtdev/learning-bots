@@ -166,11 +166,11 @@ Colon（コロン）のデータストアとして Amazon DynamoDB を使用す�
 | 項目 | 内容 |
 |------|------|
 | バケット名 | `colon-recordings-{account-id}-{region}` |
-| キー構造 | `recordings/{userId}/{recordingId}/{filename}.mp4` |
-| 暗号化 | SSE-S3 |
+| キー構造 | `recordings/{userId}/{recordingId}/recording.mp4` |
+| 暗号化 | SSE-S3 (AES256) |
 | バージョニング | 無効 |
 | ライフサイクル | 90日後に Glacier に移行、365日後に削除 |
-| CORS | CloudFront ドメインのみ許可 |
+| CORS | `allowed_origins = ["*"]`（全オリジン許可） |
 
 ### 4.2 静的サイトホスティング
 
@@ -198,11 +198,11 @@ Colon（コロン）のデータストアとして Amazon DynamoDB を使用す�
 
 ### 6.1 削除時の一貫性
 
-| 操作 | 処理 |
-|------|------|
-| ユーザー削除 | Users → Bots → Bot Sessions → Recordings（S3ファイル含む）を順次削除 |
-| ボット削除 | Bots のアイテム削除 + 関連 Bot Sessions 削除 + 関連 Recordings 削除 |
-| 録画削除 | Recordings のアイテム削除 + S3 ファイル削除 |
+| 操作 | 設計 | 実装状況 |
+|------|------|------|
+| ユーザー削除 | Users → Bots → Bot Sessions → Recordings（S3ファイル含む）を順次削除 | ∆ ボットセッション削除・アクティブセッション退出は未実装 |
+| ボット削除 | Bots のアイテム削除 + 関連 Bot Sessions 削除 + 関連 Recordings 削除 | ∆ ボットレコードのみ削除、カスケード削除は未実装 |
+| 録画削除 | Recordings のアイテム削除 + S3 ファイル削除 | ✓ 実装済み |
 
 ### 6.2 非正規化データの更新
 - `recordings.botName` はボット名変更時に更新しない（録画時点の名前を保持）
