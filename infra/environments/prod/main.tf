@@ -74,7 +74,7 @@ module "auth" {
   google_client_secret  = var.google_client_secret
   cognito_domain_prefix = var.cognito_domain_prefix
   callback_urls         = [
-    var.domain_name != "" ? "https://${var.domain_name}/auth/callback" : "https://${module.networking.cloudfront_domain_name}/auth/callback",
+    var.domain_name != "" ? "https://${var.domain_name}/ja/auth/callback" : "https://${module.networking.cloudfront_domain_name}/ja/auth/callback",
     "http://localhost:3000/auth/callback",
   ]
   logout_urls = [
