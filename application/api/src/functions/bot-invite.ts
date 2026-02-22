@@ -47,9 +47,7 @@ export const handler = async (
   const userId = getUserId(event);
   if (!userId) return unauthorized();
 
-  const method = event.httpMethod;
   const botId = event.pathParameters?.botId;
-  const resource = event.resource;
 
   if (!botId) return notFound("Bot ID is required");
 
