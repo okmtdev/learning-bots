@@ -18,7 +18,7 @@ async function getRecallApiKey(): Promise<string> {
   return cachedApiKey;
 }
 
-const RECALL_API_BASE = "https://api.recall.ai/api/v1";
+const RECALL_API_BASE = "https://ap-northeast-1.recall.ai/api/v1";
 
 interface RecallBotConfig {
   meeting_url: string;
