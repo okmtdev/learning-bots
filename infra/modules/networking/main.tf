@@ -28,6 +28,36 @@ resource "aws_cloudfront_function" "api_rewrite" {
 }
 
 # ============================================================
+# CloudFront Function – Rewrite S3 directory paths to index.html
+# /ja/auth/callback  → /ja/auth/callback/index.html
+# /ja/dashboard/     → /ja/dashboard/index.html
+# ============================================================
+resource "aws_cloudfront_function" "s3_directory_index" {
+  name    = "${var.project}-${var.environment}-s3-directory-index"
+  runtime = "cloudfront-js-1.0"
+  publish = true
+  code    = <<-EOF
+    function handler(event) {
+      var request = event.request;
+      var uri = request.uri;
+
+      // If the URI has a file extension, pass through as-is
+      if (uri.match(/\.[a-zA-Z0-9]+$/)) {
+        return request;
+      }
+
+      // Add trailing slash if missing, then append index.html
+      if (!uri.endsWith('/')) {
+        uri += '/';
+      }
+      request.uri = uri + 'index.html';
+
+      return request;
+    }
+  EOF
+}
+
+# ============================================================
 # CloudFront Distribution
 # ============================================================
 resource "aws_cloudfront_distribution" "main" {
@@ -88,6 +118,11 @@ resource "aws_cloudfront_distribution" "main" {
     default_ttl = 86400
     max_ttl     = 31536000
     compress    = true
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.s3_directory_index.arn
+    }
   }
 
   # ----------------------------------------------------------

@@ -75,7 +75,10 @@ module "auth" {
   cognito_domain_prefix = var.cognito_domain_prefix
   callback_urls         = [
     var.domain_name != "" ? "https://${var.domain_name}/ja/auth/callback" : "https://${module.networking.cloudfront_domain_name}/ja/auth/callback",
+    var.domain_name != "" ? "https://${var.domain_name}/en/auth/callback" : "https://${module.networking.cloudfront_domain_name}/en/auth/callback",
     "http://localhost:3000/auth/callback",
+    "http://localhost:3000/ja/auth/callback",
+    "http://localhost:3000/en/auth/callback",
   ]
   logout_urls = [
     var.domain_name != "" ? "https://${var.domain_name}/" : "https://${module.networking.cloudfront_domain_name}/",
