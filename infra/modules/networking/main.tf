@@ -41,6 +41,12 @@ resource "aws_cloudfront_function" "s3_directory_index" {
       var request = event.request;
       var uri = request.uri;
 
+      // Root path: redirect to default locale
+      if (uri === '/' || uri === '') {
+        request.uri = '/ja/index.html';
+        return request;
+      }
+
       // If the URI has a file extension, pass through as-is
       if (uri.match(/\.[a-zA-Z0-9]+$/)) {
         return request;
