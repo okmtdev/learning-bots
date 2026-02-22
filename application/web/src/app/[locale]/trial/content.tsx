@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/toast";
 import { Footer } from "@/components/layout/footer";
-import { API_BASE_URL } from "@/lib/constants";
 import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import { localePath } from "@/lib/navigation";
@@ -41,7 +40,7 @@ export default function TrialContent() {
 
     setIsInviting(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/trial/invite`, {
+      const response = await fetch(`/api/trial/invite`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -79,7 +78,7 @@ export default function TrialContent() {
 
     setIsLeaving(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/trial/leave`, {
+      const response = await fetch(`/api/trial/leave`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ recallBotId: activeBot.recallBotId }),
