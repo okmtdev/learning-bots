@@ -17,12 +17,33 @@ import {
   internalError,
   getUserId,
   unauthorized,
+  badRequest,
 } from "../lib/response.js";
 import { logger } from "../lib/logger.js";
 
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
+  const method = event.httpMethod;
+  const resource = event.resource;
+
+  // Trial routes - no auth required
+  if (resource.startsWith("/trial")) {
+    try {
+      if (method === "POST" && resource.endsWith("/invite")) {
+        return await handleTrialInvite(event);
+      }
+      if (method === "POST" && resource.endsWith("/leave")) {
+        return await handleTrialLeave(event);
+      }
+      return notFound("Route not found");
+    } catch (err) {
+      logger.error("trialInvite", "Unexpected error", err as Error, {});
+      return internalError();
+    }
+  }
+
+  // Authenticated routes
   const userId = getUserId(event);
   if (!userId) return unauthorized();
 
@@ -174,4 +195,66 @@ async function handleGetSession(
     status: activeSession.status,
     joinedAt: activeSession.joinedAt,
   });
+}
+
+// ──────────────────────────────────────────────────────────────
+// Trial handlers (no auth, no DynamoDB)
+// ──────────────────────────────────────────────────────────────
+
+async function handleTrialInvite(
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> {
+  const body = JSON.parse(event.body || "{}");
+
+  const meetingUrl = body.meetingUrl;
+  const botName = body.botName || "Colon Trial Bot";
+
+  if (
+    !meetingUrl ||
+    typeof meetingUrl !== "string" ||
+    !meetingUrl.startsWith("https://meet.google.com/")
+  ) {
+    return validationError("URL must be a valid Google Meet URL");
+  }
+
+  if (botName.length > 50) {
+    return validationError("Bot name must be 50 characters or less");
+  }
+
+  const recallBot = await createRecallBot({
+    meeting_url: meetingUrl,
+    bot_name: botName,
+    recording_mode: "speaker_view",
+  });
+
+  logger.info("trialInvite", "Trial bot invited to meeting", {
+    metadata: { recallBotId: recallBot.id, meetingUrl },
+  });
+
+  return success({
+    recallBotId: recallBot.id,
+    meetingUrl,
+    botName,
+    status: "joining",
+    joinedAt: new Date().toISOString(),
+  });
+}
+
+async function handleTrialLeave(
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> {
+  const body = JSON.parse(event.body || "{}");
+  const recallBotId = body.recallBotId;
+
+  if (!recallBotId || typeof recallBotId !== "string") {
+    return badRequest("recallBotId is required");
+  }
+
+  await removeRecallBot(recallBotId);
+
+  logger.info("trialLeave", "Trial bot leaving meeting", {
+    metadata: { recallBotId },
+  });
+
+  return success({ status: "leaving" });
 }

@@ -166,5 +166,30 @@
     "deleteAccountAction": "完全に削除する",
     "deleteAccountConfirm": "本当にアカウントを削除しますか？すべてのデータが完全に消去されます。",
     "saved": "設定を保存しました"
+  },
+  "trial": {
+    "badge": "トライアル",
+    "title": "ボット招待をお試し",
+    "description": "ログイン不要でボットの招待機能を試せます。Google Meet のURLを入力して、ボットを招待してみましょう。",
+    "inviteTitle": "ミーティングにボットを招待",
+    "botNameLabel": "ボット名（任意）",
+    "botNamePlaceholder": "Colon Trial Bot",
+    "botNameHelp": "空欄の場合は \"Colon Trial Bot\" になります",
+    "meetingUrl": "Google Meet URL",
+    "meetingUrlPlaceholder": "https://meet.google.com/xxx-xxxx-xxx",
+    "meetingUrlHelp": "Google Meet のURLを貼り付けてください",
+    "urlError": "有効な Google Meet のURLを入力してください",
+    "submit": "招待する",
+    "activeSession": "現在参加中のボット",
+    "status": "ステータス",
+    "statusJoining": "参加中...",
+    "joinedAt": "参加開始",
+    "leave": "退出させる",
+    "invited": "ボットを招待しました！",
+    "left": "ボットを退出させました",
+    "notesTitle": "ご注意",
+    "note1": "トライアルではボットの録画・インタラクティブ機能が利用できます",
+    "note2": "ボットは Google Meet にのみ参加できます",
+    "note3": "トライアルの録画データは保存されません"
   }
 }

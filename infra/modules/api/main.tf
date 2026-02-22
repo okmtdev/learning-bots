@@ -140,6 +140,18 @@ locals {
       lambda_key  = "recording-webhook"
       authorized  = false
     }
+    "trial-invite-POST" = {
+      resource_id = aws_api_gateway_resource.trial_invite.id
+      http_method = "POST"
+      lambda_key  = "bot-invite"
+      authorized  = false
+    }
+    "trial-leave-POST" = {
+      resource_id = aws_api_gateway_resource.trial_leave.id
+      http_method = "POST"
+      lambda_key  = "bot-invite"
+      authorized  = false
+    }
   }
 }
 
@@ -495,6 +507,27 @@ resource "aws_api_gateway_resource" "webhook_recall" {
   rest_api_id = aws_api_gateway_rest_api.api.id
   parent_id   = aws_api_gateway_resource.webhook.id
   path_part   = "recall"
+}
+
+# /trial
+resource "aws_api_gateway_resource" "trial" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
+  path_part   = "trial"
+}
+
+# /trial/invite
+resource "aws_api_gateway_resource" "trial_invite" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_resource.trial.id
+  path_part   = "invite"
+}
+
+# /trial/leave
+resource "aws_api_gateway_resource" "trial_leave" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_resource.trial.id
+  path_part   = "leave"
 }
 
 # ──────────────────────────────────────────────────────────────

@@ -166,5 +166,30 @@
     "deleteAccountAction": "Delete Permanently",
     "deleteAccountConfirm": "Are you sure you want to delete your account? All data will be permanently deleted.",
     "saved": "Settings saved"
+  },
+  "trial": {
+    "badge": "Trial",
+    "title": "Try Bot Invite",
+    "description": "Try the bot invite feature without logging in. Enter a Google Meet URL and invite a bot to your meeting.",
+    "inviteTitle": "Invite Bot to Meeting",
+    "botNameLabel": "Bot Name (optional)",
+    "botNamePlaceholder": "Colon Trial Bot",
+    "botNameHelp": "Defaults to \"Colon Trial Bot\" if left empty",
+    "meetingUrl": "Google Meet URL",
+    "meetingUrlPlaceholder": "https://meet.google.com/xxx-xxxx-xxx",
+    "meetingUrlHelp": "Paste your Google Meet URL",
+    "urlError": "Please enter a valid Google Meet URL",
+    "submit": "Invite",
+    "activeSession": "Bot Currently in Meeting",
+    "status": "Status",
+    "statusJoining": "Joining...",
+    "joinedAt": "Joined at",
+    "leave": "Remove from meeting",
+    "invited": "Bot invited!",
+    "left": "Bot removed from meeting",
+    "notesTitle": "Notes",
+    "note1": "Trial includes recording and interactive features",
+    "note2": "Bots can only join Google Meet",
+    "note3": "Trial recordings are not saved"
   }
 }
