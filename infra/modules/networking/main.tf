@@ -147,23 +147,6 @@ resource "aws_cloudfront_distribution" "main" {
   }
 
   # ----------------------------------------------------------
-  # Custom error responses (SPA routing)
-  # ----------------------------------------------------------
-  custom_error_response {
-    error_code            = 403
-    response_code         = 200
-    response_page_path    = "/ja/index.html"
-    error_caching_min_ttl = 10
-  }
-
-  custom_error_response {
-    error_code            = 404
-    response_code         = 200
-    response_page_path    = "/ja/index.html"
-    error_caching_min_ttl = 10
-  }
-
-  # ----------------------------------------------------------
   # Viewer certificate
   # ----------------------------------------------------------
   viewer_certificate {
