@@ -11,7 +11,7 @@ export default function AuthCallbackContent() {
   const searchParams = useSearchParams();
   const { refreshUser } = useAuth();
   const tc = useTranslations("common");
-  const { push, replace } = useLocaleRouter();
+  const { locale } = useLocaleRouter();
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -20,27 +20,27 @@ export default function AuthCallbackContent() {
 
       if (error) {
         console.error("OAuth error:", error);
-        replace("/");
+        window.location.replace(`/${locale}/`);
         return;
       }
 
       if (!code) {
-        replace("/");
+        window.location.replace(`/${locale}/`);
         return;
       }
 
       try {
         await exchangeCodeForTokens(code);
         await refreshUser();
-        push("/dashboard");
+        window.location.replace(`/${locale}/dashboard`);
       } catch (err) {
-        console.error("Token exchange failed:", err);
-        replace("/");
+        console.error("Auth failed:", err);
+        window.location.replace(`/${locale}/`);
       }
     };
 
     handleCallback();
-  }, [searchParams, push, replace, refreshUser]);
+  }, [searchParams, locale, refreshUser]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">

@@ -8,6 +8,26 @@ locals {
 }
 
 # ============================================================
+# CloudFront Function – Strip /api prefix before forwarding to API Gateway
+# /api/auth/me → /auth/me  (origin_path /v1 then prepends → /v1/auth/me)
+# ============================================================
+resource "aws_cloudfront_function" "api_rewrite" {
+  name    = "${var.project}-${var.environment}-api-rewrite"
+  runtime = "cloudfront-js-1.0"
+  publish = true
+  code    = <<-EOF
+    function handler(event) {
+      var request = event.request;
+      request.uri = request.uri.replace(/^\/api/, '');
+      if (!request.uri || request.uri === '') {
+        request.uri = '/';
+      }
+      return request;
+    }
+  EOF
+}
+
+# ============================================================
 # CloudFront Distribution
 # ============================================================
 resource "aws_cloudfront_distribution" "main" {
@@ -84,6 +104,11 @@ resource "aws_cloudfront_distribution" "main" {
     origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer.id
 
     compress = true
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.api_rewrite.arn
+    }
   }
 
   # ----------------------------------------------------------

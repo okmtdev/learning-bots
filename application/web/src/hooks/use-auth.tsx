@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { isAuthenticated, getIdToken, clearTokens, getLoginUrl, getLogoutUrl } from "@/lib/auth";
-import { api } from "@/lib/api";
+import { api, ApiRequestError } from "@/lib/api";
 import type { User } from "@/types";
 
 interface AuthContextType {
@@ -37,8 +37,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const userData = await api.get<User>("/auth/me");
         setUser(userData);
-      } catch {
-        clearTokens();
+      } catch (err) {
+        if (err instanceof ApiRequestError && err.status === 401) {
+          clearTokens();
+        }
       } finally {
         setIsLoading(false);
       }
@@ -61,8 +63,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const userData = await api.get<User>("/auth/me");
       setUser(userData);
-    } catch {
-      clearTokens();
+    } catch (err) {
+      if (err instanceof ApiRequestError && err.status === 401) {
+        clearTokens();
+        setUser(null);
+      }
+      throw err;
     }
   }, []);
 
