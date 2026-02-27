@@ -209,7 +209,10 @@ resource "aws_iam_role_policy" "bot_crud" {
           "dynamodb:Query",
           "dynamodb:Scan"
         ]
-        Resource = [var.bots_table_arn]
+        Resource = [
+          var.bots_table_arn,
+          var.bot_sessions_table_arn
+        ]
       }
     ]
   })
