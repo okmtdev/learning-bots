@@ -27,7 +27,6 @@ interface RecallBotConfig {
     partial_results: boolean;
     destination_url?: string;
   };
-  recording_mode?: "speaker_view" | "gallery_view" | "audio_only";
   chat?: {
     on_bot_join?: {
       send_to: "everyone";

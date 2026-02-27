@@ -100,7 +100,6 @@ async function handleInvite(
   const recallBot = await createRecallBot({
     meeting_url: parsed.data.meetingUrl,
     bot_name: bot.botName,
-    recording_mode: bot.isRecordingEnabled ? "speaker_view" : "audio_only",
   });
 
   const now = new Date().toISOString();
@@ -222,7 +221,6 @@ async function handleTrialInvite(
   const recallBot = await createRecallBot({
     meeting_url: meetingUrl,
     bot_name: botName,
-    recording_mode: "speaker_view",
   });
 
   logger.info("trialInvite", "Trial bot invited to meeting", {
