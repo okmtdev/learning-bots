@@ -41,10 +41,14 @@ export const handler = async (
 
     let body: { event: string; data: Record<string, unknown> };
     try {
+      // Recall sends headers with "webhook-" prefix; fall back to "svix-" prefix
+      const headers = event.headers;
       body = wh.verify(event.body || "", {
-        "svix-id": event.headers["svix-id"] ?? "",
-        "svix-timestamp": event.headers["svix-timestamp"] ?? "",
-        "svix-signature": event.headers["svix-signature"] ?? "",
+        "svix-id": headers["webhook-id"] ?? headers["svix-id"] ?? "",
+        "svix-timestamp":
+          headers["webhook-timestamp"] ?? headers["svix-timestamp"] ?? "",
+        "svix-signature":
+          headers["webhook-signature"] ?? headers["svix-signature"] ?? "",
       }) as { event: string; data: Record<string, unknown> };
     } catch {
       logger.warn("webhook", "Invalid webhook signature");
