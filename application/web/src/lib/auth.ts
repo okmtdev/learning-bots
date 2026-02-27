@@ -10,13 +10,23 @@ interface AuthTokens {
 }
 
 /**
+ * Build the redirect URI for the given locale
+ */
+function getRedirectUri(locale: string): string {
+  if (typeof window !== "undefined") {
+    return `${window.location.origin}/${locale}/auth/callback`;
+  }
+  return COGNITO_CONFIG.REDIRECT_URI;
+}
+
+/**
  * Get the Cognito Hosted UI login URL
  */
-export function getLoginUrl(): string {
+export function getLoginUrl(locale: string): string {
   const params = new URLSearchParams({
     response_type: "code",
     client_id: COGNITO_CONFIG.CLIENT_ID,
-    redirect_uri: COGNITO_CONFIG.REDIRECT_URI,
+    redirect_uri: getRedirectUri(locale),
     scope: "openid email profile",
     identity_provider: "Google",
   });
@@ -37,7 +47,7 @@ export function getLogoutUrl(): string {
 /**
  * Exchange authorization code for tokens
  */
-export async function exchangeCodeForTokens(code: string): Promise<AuthTokens> {
+export async function exchangeCodeForTokens(code: string, locale: string): Promise<AuthTokens> {
   const response = await fetch(
     `https://${COGNITO_CONFIG.DOMAIN}/oauth2/token`,
     {
@@ -47,7 +57,7 @@ export async function exchangeCodeForTokens(code: string): Promise<AuthTokens> {
         grant_type: "authorization_code",
         client_id: COGNITO_CONFIG.CLIENT_ID,
         code,
-        redirect_uri: COGNITO_CONFIG.REDIRECT_URI,
+        redirect_uri: getRedirectUri(locale),
       }),
     }
   );

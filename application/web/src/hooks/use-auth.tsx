@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
+import { useLocale } from "next-intl";
 import { isAuthenticated, getIdToken, clearTokens, getLoginUrl, getLogoutUrl } from "@/lib/auth";
 import { api, ApiRequestError } from "@/lib/api";
 import type { User } from "@/types";
@@ -26,6 +27,7 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const locale = useLocale();
 
   useEffect(() => {
     async function loadUser() {
@@ -50,8 +52,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(() => {
-    window.location.href = getLoginUrl();
-  }, []);
+    window.location.href = getLoginUrl(locale);
+  }, [locale]);
 
   const logout = useCallback(() => {
     clearTokens();
