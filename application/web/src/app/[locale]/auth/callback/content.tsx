@@ -30,7 +30,7 @@ export default function AuthCallbackContent() {
       }
 
       try {
-        await exchangeCodeForTokens(code);
+        await exchangeCodeForTokens(code, locale);
         await refreshUser();
         window.location.replace(`/${locale}/dashboard`);
       } catch (err) {

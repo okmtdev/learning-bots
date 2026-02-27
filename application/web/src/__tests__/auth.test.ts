@@ -45,11 +45,16 @@ describe("auth", () => {
 
   describe("getLoginUrl", () => {
     it("returns Cognito Hosted UI URL with correct params", () => {
-      const url = getLoginUrl();
+      const url = getLoginUrl("ja");
       expect(url).toContain("test.auth.ap-northeast-1.amazoncognito.com");
       expect(url).toContain("response_type=code");
       expect(url).toContain("client_id=test-client-id");
       expect(url).toContain("identity_provider=Google");
+    });
+
+    it("includes locale in redirect_uri", () => {
+      const url = getLoginUrl("ja");
+      expect(url).toContain(encodeURIComponent("/ja/auth/callback"));
     });
   });
 
