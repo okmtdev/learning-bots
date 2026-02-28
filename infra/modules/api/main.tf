@@ -309,7 +309,9 @@ resource "aws_iam_role_policy" "recording_webhook" {
         Resource = [
           var.recordings_table_arn,
           var.recordings_gsi_arn,
-          var.bots_table_arn
+          var.bots_table_arn,
+          var.bot_sessions_table_arn,
+          var.bot_sessions_gsi_arn
         ]
       },
       {

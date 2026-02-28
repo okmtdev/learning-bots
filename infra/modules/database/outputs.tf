@@ -54,3 +54,8 @@ output "bot_sessions_table_arn" {
   description = "ARN of the Bot Sessions DynamoDB table"
   value       = aws_dynamodb_table.bot_sessions.arn
 }
+
+output "bot_sessions_gsi_arn" {
+  description = "ARN of the Bot Sessions-by-recall-bot GSI"
+  value       = "${aws_dynamodb_table.bot_sessions.arn}/index/${var.project}-sessions-by-recall-bot"
+}

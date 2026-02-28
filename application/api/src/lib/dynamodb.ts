@@ -198,6 +198,19 @@ export async function deleteRecording(userId: string, recordingId: string) {
 
 // --- Bot Sessions ---
 
+export async function getBotSessionByRecallBotId(recallBotId: string) {
+  const result = await docClient.send(
+    new QueryCommand({
+      TableName: Tables.BOT_SESSIONS,
+      IndexName: "colon-sessions-by-recall-bot",
+      KeyConditionExpression: "recallBotId = :recallBotId",
+      ExpressionAttributeValues: { ":recallBotId": recallBotId },
+      Limit: 1,
+    })
+  );
+  return result.Items?.[0] || null;
+}
+
 export async function getBotSessions(botId: string) {
   const result = await docClient.send(
     new QueryCommand({

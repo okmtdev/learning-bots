@@ -103,6 +103,7 @@ module "api" {
   recordings_table_name   = module.database.recordings_table_name
   recordings_gsi_arn      = module.database.recordings_gsi_arn
   bot_sessions_table_arn  = module.database.bot_sessions_table_arn
+  bot_sessions_gsi_arn    = module.database.bot_sessions_gsi_arn
   bot_sessions_table_name = module.database.bot_sessions_table_name
   recordings_bucket_arn   = module.storage.recordings_bucket_arn
   recordings_bucket_name  = module.storage.recordings_bucket_name

@@ -119,6 +119,17 @@ resource "aws_dynamodb_table" "bot_sessions" {
     type = "S"
   }
 
+  attribute {
+    name = "recallBotId"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "${var.project}-sessions-by-recall-bot"
+    hash_key        = "recallBotId"
+    projection_type = "ALL"
+  }
+
   point_in_time_recovery {
     enabled = true
   }

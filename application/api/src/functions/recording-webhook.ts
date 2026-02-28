@@ -7,7 +7,7 @@ import {
   putBot,
   putRecording,
   updateBotSession,
-  getActiveBotSession,
+  getBotSessionByRecallBotId,
 } from "../lib/dynamodb.js";
 import { getRecallBotRecording } from "../lib/recall.js";
 import { uploadRecording, downloadFromUrl } from "../lib/s3.js";
@@ -114,6 +114,22 @@ async function handleBotDone(data: {
     metadata: { recallBotId },
   });
 
+  // Look up the session by recallBotId to get userId and botId
+  const session = await getBotSessionByRecallBotId(recallBotId);
+  if (!session) {
+    logger.warn("webhook", "No session found for recallBotId", {
+      metadata: { recallBotId },
+    });
+    return;
+  }
+
+  const { userId, botId, sessionId, meetingUrl: sessionMeetingUrl } = session as {
+    userId: string;
+    botId: string;
+    sessionId: string;
+    meetingUrl?: string;
+  };
+
   // Get recording from Recall.ai if not provided
   let videoUrl = data.video_url;
   if (!videoUrl) {
@@ -123,35 +139,61 @@ async function handleBotDone(data: {
 
   if (!videoUrl) {
     logger.warn("webhook", "No video URL available", {
-      metadata: { recallBotId },
+      metadata: { recallBotId, userId, botId },
     });
     return;
   }
-
-  // We need to find the session to get userId and botId
-  // This is a simplified version - in production you'd use a GSI
-  // For now, we'll store the mapping when creating the session
-  // and retrieve it here via a lookup mechanism
 
   // Download and upload recording
   try {
     const videoData = await downloadFromUrl(videoUrl);
     const recordingId = ulid();
-
-    // For webhook, we need additional context that should be stored
-    // when the bot was created. This is a simplified implementation.
-    // In production, store recallBotId → userId/botId mapping in DynamoDB
     const fileSizeMb = Math.round((videoData.length / (1024 * 1024)) * 100) / 100;
+    const now = new Date().toISOString();
 
-    logger.info("webhook", "Recording downloaded", {
-      metadata: { recallBotId, fileSizeMb, recordingId },
+    // Upload to S3
+    const s3Key = await uploadRecording(userId, recordingId, videoData);
+
+    // Get bot info for denormalized fields
+    const bot = await getBot(userId, botId);
+    const botName = (bot?.botName as string) || "Unknown Bot";
+
+    // Save recording metadata to DynamoDB
+    await putRecording({
+      userId,
+      recordingId,
+      botId,
+      botName,
+      meetingUrl: data.meeting_url || sessionMeetingUrl || "",
+      s3Key,
+      status: "ready",
+      fileSizeMb,
+      durationSeconds: data.duration || 0,
+      startedAt: session.joinedAt || now,
+      endedAt: now,
+      recallBotId,
+      createdAt: now,
     });
 
-    // Store metadata about the recording for later association
-    // The actual user/bot association happens through the bot session table
+    // Update session status
+    await updateBotSession(botId, sessionId, {
+      status: "completed",
+      endedAt: now,
+      recordingId,
+      ttl: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
+    });
+
+    // Update bot status to idle
+    if (bot) {
+      await putBot({ ...bot, status: "idle", updatedAt: now });
+    }
+
+    logger.info("webhook", "Recording processed successfully", {
+      metadata: { recallBotId, recordingId, userId, botId, fileSizeMb },
+    });
   } catch (err) {
     logger.error("webhook", "Failed to process recording", err as Error, {
-      metadata: { recallBotId },
+      metadata: { recallBotId, userId, botId },
     });
   }
 }
