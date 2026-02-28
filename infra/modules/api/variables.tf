@@ -39,6 +39,11 @@ variable "bot_sessions_table_arn" {
   type        = string
 }
 
+variable "bot_sessions_gsi_arn" {
+  description = "DynamoDB bot-sessions GSI ARN (by recallBotId)"
+  type        = string
+}
+
 variable "recordings_bucket_arn" {
   description = "S3 recordings bucket ARN"
   type        = string
