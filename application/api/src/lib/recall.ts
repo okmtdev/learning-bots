@@ -35,6 +35,17 @@ interface RecallBotConfig {
   };
 }
 
+interface RecallBotRecording {
+  id: string;
+  media_shortcuts: {
+    video_mixed?: {
+      data: {
+        download_url: string;
+      };
+    };
+  };
+}
+
 interface RecallBotResponse {
   id: string;
   meeting_url: string;
@@ -42,7 +53,8 @@ interface RecallBotResponse {
     code: string;
     message?: string;
   };
-  video_url?: string;
+  video_url?: string; // Legacy field (deprecated in newer API versions)
+  recordings?: RecallBotRecording[];
 }
 
 async function recallFetch(
@@ -108,20 +120,53 @@ export async function removeRecallBot(recallBotId: string): Promise<void> {
 }
 
 /**
- * Get the recording/video for a bot
+ * Extract the video download URL from a bot response.
+ * Supports both the current API format (recordings[].media_shortcuts.video_mixed.data.download_url)
+ * and the legacy format (video_url).
+ */
+function extractVideoUrl(data: RecallBotResponse): string | null {
+  // Current API format: recordings array with media_shortcuts
+  if (data.recordings && data.recordings.length > 0) {
+    const downloadUrl =
+      data.recordings[0].media_shortcuts?.video_mixed?.data?.download_url;
+    if (downloadUrl) return downloadUrl;
+  }
+
+  // Legacy API format: direct video_url field
+  if (data.video_url) return data.video_url;
+
+  return null;
+}
+
+/**
+ * Get the recording/video for a bot.
+ * Retries up to 3 times with 5-second intervals if the video URL is not yet available,
+ * since Recall.ai may still be processing the recording when bot.done fires.
  */
 export async function getRecallBotRecording(
   recallBotId: string
 ): Promise<{ video_url: string } | null> {
-  const response = await recallFetch(`/bot/${recallBotId}`);
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY_MS = 5000;
 
-  if (!response.ok) {
-    throw new Error(`Recall API error: ${response.status}`);
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const response = await recallFetch(`/bot/${recallBotId}`);
+
+    if (!response.ok) {
+      throw new Error(`Recall API error: ${response.status}`);
+    }
+
+    const data = (await response.json()) as RecallBotResponse;
+    const videoUrl = extractVideoUrl(data);
+
+    if (videoUrl) {
+      return { video_url: videoUrl };
+    }
+
+    if (attempt < MAX_RETRIES) {
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+    }
   }
 
-  const data = (await response.json()) as RecallBotResponse;
-  if (data.video_url) {
-    return { video_url: data.video_url };
-  }
   return null;
 }

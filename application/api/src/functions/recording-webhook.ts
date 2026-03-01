@@ -130,15 +130,20 @@ async function handleBotDone(data: {
     meetingUrl?: string;
   };
 
-  // Get recording from Recall.ai if not provided
+  // Get recording URL from Recall.ai API (supports both current and legacy formats)
+  // The webhook payload typically does not include the video URL directly;
+  // it must be fetched from the Retrieve Bot endpoint.
   let videoUrl = data.video_url;
   if (!videoUrl) {
+    logger.info("webhook", "Fetching video URL from Recall API", {
+      metadata: { recallBotId },
+    });
     const recording = await getRecallBotRecording(recallBotId);
     videoUrl = recording?.video_url;
   }
 
   if (!videoUrl) {
-    logger.warn("webhook", "No video URL available", {
+    logger.warn("webhook", "No video URL available after retries", {
       metadata: { recallBotId, userId, botId },
     });
     return;
