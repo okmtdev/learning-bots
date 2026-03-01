@@ -104,6 +104,48 @@ export function getTokens(): AuthTokens | null {
 }
 
 /**
+ * Refresh tokens using the refresh token
+ */
+export async function refreshTokens(): Promise<AuthTokens | null> {
+  const tokens = getTokens();
+  if (!tokens?.refreshToken) return null;
+
+  try {
+    const response = await fetch(
+      `https://${COGNITO_CONFIG.DOMAIN}/oauth2/token`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          grant_type: "refresh_token",
+          client_id: COGNITO_CONFIG.CLIENT_ID,
+          refresh_token: tokens.refreshToken,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      clearTokens();
+      return null;
+    }
+
+    const data = await response.json();
+    const newTokens: AuthTokens = {
+      idToken: data.id_token,
+      accessToken: data.access_token,
+      refreshToken: tokens.refreshToken, // refresh token is not returned on refresh
+      expiresAt: Date.now() + data.expires_in * 1000,
+    };
+
+    saveTokens(newTokens);
+    return newTokens;
+  } catch {
+    clearTokens();
+    return null;
+  }
+}
+
+/**
  * Get the ID token for API requests
  */
 export function getIdToken(): string | null {
@@ -117,6 +159,23 @@ export function getIdToken(): string | null {
   }
 
   return tokens.idToken;
+}
+
+/**
+ * Get the ID token, attempting refresh if expired
+ */
+export async function getIdTokenWithRefresh(): Promise<string | null> {
+  const tokens = getTokens();
+  if (!tokens) return null;
+
+  // Token is still valid
+  if (Date.now() <= tokens.expiresAt) {
+    return tokens.idToken;
+  }
+
+  // Try to refresh
+  const newTokens = await refreshTokens();
+  return newTokens?.idToken ?? null;
 }
 
 /**

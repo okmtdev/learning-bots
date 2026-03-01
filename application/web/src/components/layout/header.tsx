@@ -62,6 +62,13 @@ export const Header = () => {
                   </p>
                   <p className="text-xs text-gray-500">{user?.email}</p>
                 </div>
+                <Link
+                  href={localePath("/settings")}
+                  onClick={() => setIsUserMenuOpen(false)}
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  {t("settings")}
+                </Link>
                 <button
                   type="button"
                   onClick={() => {
@@ -143,13 +150,20 @@ export const Header = () => {
                 <p className="text-xs text-gray-500">{user?.email}</p>
               </div>
             </div>
+            <Link
+              href={localePath("/settings")}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="mt-3 block rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+            >
+              {t("settings")}
+            </Link>
             <button
               type="button"
               onClick={() => {
                 setIsMobileMenuOpen(false);
                 logout();
               }}
-              className="mt-3 w-full rounded-md px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100"
+              className="w-full rounded-md px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100"
             >
               {t("logout")}
             </button>
