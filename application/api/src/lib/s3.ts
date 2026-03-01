@@ -4,7 +4,8 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
 } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/cloudfront-signer";
+import { getSignedUrl as getCloudFrontSignedUrl } from "@aws-sdk/cloudfront-signer";
+import { getSignedUrl as getS3SignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const s3 = new S3Client({ region: process.env.AWS_REGION || "ap-northeast-1" });
 
@@ -50,32 +51,51 @@ export async function deleteRecordingFile(s3Key: string): Promise<void> {
 }
 
 /**
- * Get a signed CloudFront URL for playback
+ * Get a signed URL for playback.
+ * Uses CloudFront signed URL when configured, otherwise falls back to S3 pre-signed URL.
  */
-export function getPlaybackUrl(s3Key: string): string {
-  if (!CLOUDFRONT_DOMAIN || !CLOUDFRONT_KEY_PAIR_ID || !CLOUDFRONT_PRIVATE_KEY) {
-    // Fallback: return S3 URL (for development)
-    return `https://${RECORDINGS_BUCKET}.s3.amazonaws.com/${s3Key}`;
+export async function getPlaybackUrl(s3Key: string): Promise<string> {
+  if (CLOUDFRONT_DOMAIN && CLOUDFRONT_KEY_PAIR_ID && CLOUDFRONT_PRIVATE_KEY) {
+    const url = `https://${CLOUDFRONT_DOMAIN}/${s3Key}`;
+    const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    return getCloudFrontSignedUrl({
+      url,
+      keyPairId: CLOUDFRONT_KEY_PAIR_ID,
+      privateKey: CLOUDFRONT_PRIVATE_KEY,
+      dateLessThan: expiry.toISOString(),
+    });
   }
 
-  const url = `https://${CLOUDFRONT_DOMAIN}/${s3Key}`;
-  const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-
-  return getSignedUrl({
-    url,
-    keyPairId: CLOUDFRONT_KEY_PAIR_ID,
-    privateKey: CLOUDFRONT_PRIVATE_KEY,
-    dateLessThan: expiry.toISOString(),
-  });
+  // Fallback: S3 pre-signed URL (1 hour expiry)
+  return getS3SignedUrl(
+    s3,
+    new GetObjectCommand({ Bucket: RECORDINGS_BUCKET, Key: s3Key }),
+    { expiresIn: 3600 }
+  );
 }
 
 /**
- * Get a signed CloudFront URL for download
+ * Get a signed URL for download (with Content-Disposition: attachment).
+ * Uses CloudFront signed URL when configured, otherwise falls back to S3 pre-signed URL.
  */
-export function getDownloadUrl(s3Key: string): string {
-  const playbackUrl = getPlaybackUrl(s3Key);
-  const separator = playbackUrl.includes("?") ? "&" : "?";
-  return `${playbackUrl}${separator}response-content-disposition=attachment`;
+export async function getDownloadUrl(s3Key: string): Promise<string> {
+  if (CLOUDFRONT_DOMAIN && CLOUDFRONT_KEY_PAIR_ID && CLOUDFRONT_PRIVATE_KEY) {
+    const playbackUrl = await getPlaybackUrl(s3Key);
+    const separator = playbackUrl.includes("?") ? "&" : "?";
+    return `${playbackUrl}${separator}response-content-disposition=attachment`;
+  }
+
+  // Fallback: S3 pre-signed URL with ResponseContentDisposition
+  return getS3SignedUrl(
+    s3,
+    new GetObjectCommand({
+      Bucket: RECORDINGS_BUCKET,
+      Key: s3Key,
+      ResponseContentDisposition: "attachment",
+    }),
+    { expiresIn: 3600 }
+  );
 }
 
 /**

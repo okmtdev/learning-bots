@@ -25,6 +25,7 @@ for (const entry of entryPoints) {
       "@aws-sdk/client-cognito-identity-provider",
       "@aws-sdk/lib-dynamodb",
       "@aws-sdk/cloudfront-signer",
+      "@aws-sdk/s3-request-presigner",
     ],
     sourcemap: true,
     minify: true,
