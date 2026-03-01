@@ -21,6 +21,7 @@ export const Tables = {
   BOTS: process.env.BOTS_TABLE || "colon-bots",
   RECORDINGS: process.env.RECORDINGS_TABLE || "colon-recordings",
   BOT_SESSIONS: process.env.BOT_SESSIONS_TABLE || "colon-bot-sessions",
+  MEETING_EVENTS: process.env.MEETING_EVENTS_TABLE_NAME || "colon-meeting-events",
 } as const;
 
 // --- Users ---
@@ -263,4 +264,58 @@ export async function updateBotSession(
       ExpressionAttributeValues: values,
     })
   );
+}
+
+// --- Meeting Events ---
+
+export async function putMeetingEvent(event: Record<string, unknown>) {
+  await docClient.send(
+    new PutCommand({
+      TableName: Tables.MEETING_EVENTS,
+      Item: event,
+    })
+  );
+}
+
+export async function getMeetingEvents(
+  sessionId: string,
+  options?: {
+    eventType?: string;
+    limit?: number;
+    nextToken?: string;
+  }
+) {
+  const keyCondition = "sessionId = :sessionId";
+  const expressionValues: Record<string, unknown> = { ":sessionId": sessionId };
+
+  let filterExpression: string | undefined;
+  const expressionNames: Record<string, string> = {};
+
+  if (options?.eventType) {
+    filterExpression = "#eventType = :eventType";
+    expressionNames["#eventType"] = "eventType";
+    expressionValues[":eventType"] = options.eventType;
+  }
+
+  const result = await docClient.send(
+    new QueryCommand({
+      TableName: Tables.MEETING_EVENTS,
+      KeyConditionExpression: keyCondition,
+      FilterExpression: filterExpression,
+      ExpressionAttributeNames: Object.keys(expressionNames).length > 0 ? expressionNames : undefined,
+      ExpressionAttributeValues: expressionValues,
+      ScanIndexForward: true,
+      Limit: options?.limit || 100,
+      ExclusiveStartKey: options?.nextToken
+        ? JSON.parse(Buffer.from(options.nextToken, "base64").toString())
+        : undefined,
+    })
+  );
+
+  return {
+    items: result.Items || [],
+    nextToken: result.LastEvaluatedKey
+      ? Buffer.from(JSON.stringify(result.LastEvaluatedKey)).toString("base64")
+      : undefined,
+  };
 }

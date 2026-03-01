@@ -6,6 +6,7 @@ import {
   getBot,
   putBot,
   putRecording,
+  putMeetingEvent,
   updateBotSession,
   getBotSessionByRecallBotId,
 } from "../lib/dynamodb.js";
@@ -82,6 +83,15 @@ export const handler = async (
         });
         break;
       }
+      case "bot.transcription":
+        await handleTranscription(body.data);
+        break;
+      case "bot.reaction":
+        await handleReaction(body.data);
+        break;
+      case "bot.chat_message":
+        await handleChatMessage(body.data);
+        break;
       default:
         logger.info("webhook", `Unhandled webhook event: ${body.event}`);
     }
@@ -92,6 +102,117 @@ export const handler = async (
     return internalError();
   }
 };
+
+async function saveMeetingEvent(
+  recallBotId: string,
+  eventType: "transcription" | "reaction" | "comment",
+  speakerName: string,
+  content: string,
+  extra?: { language?: string; isFinal?: boolean }
+): Promise<void> {
+  const session = await getBotSessionByRecallBotId(recallBotId);
+  if (!session) {
+    logger.warn("webhook", `No session found for meeting event`, {
+      metadata: { recallBotId, eventType },
+    });
+    return;
+  }
+
+  const { sessionId, userId, botId } = session as {
+    sessionId: string;
+    userId: string;
+    botId: string;
+  };
+
+  const now = new Date().toISOString();
+  await putMeetingEvent({
+    sessionId,
+    eventId: ulid(),
+    userId,
+    botId,
+    eventType,
+    speakerName,
+    content,
+    timestamp: now,
+    ...(extra?.language && { language: extra.language }),
+    ...(extra?.isFinal !== undefined && { isFinal: extra.isFinal }),
+    createdAt: now,
+  });
+}
+
+async function handleTranscription(data: {
+  bot?: { id?: string };
+  transcript?: {
+    speaker?: string;
+    words?: Array<{ text: string; start_time?: number; end_time?: number }>;
+    is_final?: boolean;
+    language?: string;
+  };
+}): Promise<void> {
+  const recallBotId = data.bot?.id;
+  if (!recallBotId) return;
+
+  const transcript = data.transcript;
+  if (!transcript) return;
+
+  const text = transcript.words?.map((w) => w.text).join(" ") || "";
+  if (!text) return;
+
+  await saveMeetingEvent(recallBotId, "transcription", transcript.speaker || "Unknown", text, {
+    language: transcript.language,
+    isFinal: transcript.is_final,
+  });
+
+  logger.info("webhook", "Transcription event saved", {
+    metadata: { recallBotId, speaker: transcript.speaker, isFinal: transcript.is_final },
+  });
+}
+
+async function handleReaction(data: {
+  bot?: { id?: string };
+  participant?: { name?: string };
+  reaction?: string;
+}): Promise<void> {
+  const recallBotId = data.bot?.id;
+  if (!recallBotId) return;
+
+  const reaction = data.reaction || "";
+  if (!reaction) return;
+
+  await saveMeetingEvent(
+    recallBotId,
+    "reaction",
+    data.participant?.name || "Unknown",
+    reaction
+  );
+
+  logger.info("webhook", "Reaction event saved", {
+    metadata: { recallBotId, participant: data.participant?.name, reaction },
+  });
+}
+
+async function handleChatMessage(data: {
+  bot?: { id?: string };
+  participant?: { name?: string };
+  message?: string;
+}): Promise<void> {
+  const recallBotId = data.bot?.id;
+  if (!recallBotId) return;
+
+  const message = data.message || "";
+  if (!message) return;
+
+  await saveMeetingEvent(
+    recallBotId,
+    "comment",
+    data.participant?.name || "Unknown",
+    message
+  );
+
+  logger.info("webhook", "Chat message event saved", {
+    metadata: { recallBotId, participant: data.participant?.name },
+  });
+}
 
 async function handleCallEnded(data: {
   bot: { id: string };

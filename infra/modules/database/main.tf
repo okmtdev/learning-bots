@@ -144,3 +144,32 @@ resource "aws_dynamodb_table" "bot_sessions" {
     Project     = var.project
   }
 }
+
+################################################################################
+# Meeting Events Table
+################################################################################
+resource "aws_dynamodb_table" "meeting_events" {
+  name         = "${var.project}-meeting-events"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "sessionId"
+  range_key    = "eventId"
+
+  attribute {
+    name = "sessionId"
+    type = "S"
+  }
+
+  attribute {
+    name = "eventId"
+    type = "S"
+  }
+
+  point_in_time_recovery {
+    enabled = true
+  }
+
+  tags = {
+    Environment = var.environment
+    Project     = var.project
+  }
+}

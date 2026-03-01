@@ -19,6 +19,7 @@ Colon（コロン）のデータストアとして Amazon DynamoDB を使用す�
 | `colon-bots` | ボット設定 | `userId` | `botId` |
 | `colon-recordings` | 録画メタデータ | `userId` | `recordingId` |
 | `colon-bot-sessions` | ボットのミーティング参加セッション | `botId` | `sessionId` |
+| `colon-meeting-events` | ミーティング中のイベント（転写・リアクション・コメント） | `sessionId` | `eventId` |
 
 ---
 
@@ -159,6 +160,47 @@ Colon（コロン）のデータストアとして Amazon DynamoDB を使用す�
 
 ---
 
+### 3.5 colon-meeting-events
+
+ミーティング中に発生するイベント（リアルタイム転写、リアクション、チャットコメント）を永続保存する。
+
+| 属性名 | 型 | 必須 | 説明 |
+|--------|-----|------|------|
+| `sessionId` (PK) | String | ✅ | ボットセッションID（`colon-bot-sessions` の `sessionId`） |
+| `eventId` (SK) | String | ✅ | イベントID（ULID） |
+| `userId` | String | ✅ | 所有ユーザーID |
+| `botId` | String | ✅ | ボットID |
+| `eventType` | String | ✅ | `transcription` / `reaction` / `comment` |
+| `speakerName` | String | ✅ | 発言者・リアクション者の名前 |
+| `content` | String | ✅ | 転写テキスト / リアクション絵文字 / コメント本文 |
+| `timestamp` | String | ✅ | イベント発生日時 (ISO 8601) |
+| `language` | String | ❌ | 転写の言語コード（例: `ja`, `en`）。`transcription` 時のみ |
+| `isFinal` | Boolean | ❌ | 転写が確定済みか。`transcription` 時のみ |
+| `createdAt` | String | ✅ | レコード作成日時 (ISO 8601) |
+
+**データ保持:** TTL なし（永続保存）
+
+**eventType 別の content 内容:**
+
+| eventType | content の内容 | 例 |
+|-----------|-------------|-----|
+| `transcription` | リアルタイム転写テキスト | `"本日の議題について説明します"` |
+| `reaction` | リアクション絵文字 | `"👍"`, `"😂"` |
+| `comment` | ミーティングチャットのメッセージ | `"資料をチャットに貼りました"` |
+
+**アクセスパターン:**
+| パターン | キー条件 |
+|----------|----------|
+| セッションのイベント一覧取得 | PK = `sessionId`（SK昇順 = 時系列順） |
+| セッションの転写のみ取得 | PK = `sessionId`, FilterExpression: `eventType = transcription` |
+| セッションのリアクションのみ取得 | PK = `sessionId`, FilterExpression: `eventType = reaction` |
+| セッションのコメントのみ取得 | PK = `sessionId`, FilterExpression: `eventType = comment` |
+
+**録画との関連:**
+- 録画（`colon-recordings`）からイベントを取得するには、`recallBotId` を使って `colon-bot-sessions` のセッションを検索し、その `sessionId` でイベントを取得する
+
+---
+
 ## 4. S3 バケット設計
 
 ### 4.1 録画ファイル保存
@@ -191,6 +233,7 @@ Colon（コロン）のデータストアとして Amazon DynamoDB を使用す�
 | botId | ULID | 時系列ソート可能、衝突耐性 |
 | recordingId | ULID | 時系列ソート可能、衝突耐性 |
 | sessionId | ULID | 時系列ソート可能、衝突耐性 |
+| eventId | ULID | 時系列ソート可能、衝突耐性 |
 
 ---
 

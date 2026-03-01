@@ -74,6 +74,16 @@ variable "recordings_bucket_name" {
   type        = string
 }
 
+variable "meeting_events_table_arn" {
+  description = "DynamoDB meeting-events table ARN"
+  type        = string
+}
+
+variable "meeting_events_table_name" {
+  description = "DynamoDB meeting-events table name"
+  type        = string
+}
+
 variable "cognito_user_pool_id" {
   description = "Cognito User Pool ID"
   type        = string

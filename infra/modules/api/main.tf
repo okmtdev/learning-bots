@@ -311,7 +311,8 @@ resource "aws_iam_role_policy" "recording_webhook" {
           var.recordings_gsi_arn,
           var.bots_table_arn,
           var.bot_sessions_table_arn,
-          var.bot_sessions_gsi_arn
+          var.bot_sessions_gsi_arn,
+          var.meeting_events_table_arn
         ]
       },
       {
@@ -384,13 +385,14 @@ resource "aws_lambda_function" "functions" {
 
   environment {
     variables = {
-      USERS_TABLE_NAME        = var.users_table_name
-      BOTS_TABLE_NAME         = var.bots_table_name
-      RECORDINGS_TABLE_NAME   = var.recordings_table_name
-      BOT_SESSIONS_TABLE_NAME = var.bot_sessions_table_name
-      RECORDINGS_BUCKET_NAME  = var.recordings_bucket_name
-      REGION                  = data.aws_region.current.name
-      SSM_PREFIX              = "/${var.project}/${var.environment}"
+      USERS_TABLE_NAME         = var.users_table_name
+      BOTS_TABLE_NAME          = var.bots_table_name
+      RECORDINGS_TABLE_NAME    = var.recordings_table_name
+      BOT_SESSIONS_TABLE_NAME  = var.bot_sessions_table_name
+      MEETING_EVENTS_TABLE_NAME = var.meeting_events_table_name
+      RECORDINGS_BUCKET_NAME   = var.recordings_bucket_name
+      REGION                   = data.aws_region.current.name
+      SSM_PREFIX               = "/${var.project}/${var.environment}"
     }
   }
 
