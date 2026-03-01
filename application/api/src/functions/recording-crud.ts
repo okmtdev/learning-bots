@@ -76,9 +76,9 @@ async function handleGet(
 
   // Generate signed URLs for playback and download
   const playbackUrl =
-    recording.status === "ready" ? getPlaybackUrl(recording.s3Key) : null;
+    recording.status === "ready" ? await getPlaybackUrl(recording.s3Key) : null;
   const downloadUrl =
-    recording.status === "ready" ? getDownloadUrl(recording.s3Key) : null;
+    recording.status === "ready" ? await getDownloadUrl(recording.s3Key) : null;
 
   return success({
     ...recording,
