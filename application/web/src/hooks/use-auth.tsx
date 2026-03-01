@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { useLocale } from "next-intl";
-import { isAuthenticated, getIdToken, clearTokens, getLoginUrl, getLogoutUrl } from "@/lib/auth";
+import { isAuthenticated, getIdToken, clearTokens, getLoginUrl, getLogoutUrl, refreshTokens } from "@/lib/auth";
 import { api, ApiRequestError } from "@/lib/api";
 import type { User } from "@/types";
 
@@ -29,6 +29,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const locale = useLocale();
 
+  const redirectToLogin = useCallback(() => {
+    clearTokens();
+    setUser(null);
+    window.location.href = getLoginUrl(locale);
+  }, [locale]);
+
   useEffect(() => {
     async function loadUser() {
       if (!isAuthenticated()) {
@@ -41,7 +47,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(userData);
       } catch (err) {
         if (err instanceof ApiRequestError && err.status === 401) {
-          clearTokens();
+          // Try refreshing the token before giving up
+          const refreshed = await refreshTokens();
+          if (refreshed) {
+            try {
+              const userData = await api.get<User>("/auth/me");
+              setUser(userData);
+              return;
+            } catch {
+              // Refresh didn't help, redirect to login
+            }
+          }
+          redirectToLogin();
         }
       } finally {
         setIsLoading(false);
@@ -49,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     loadUser();
-  }, []);
+  }, [redirectToLogin]);
 
   const login = useCallback(() => {
     window.location.href = getLoginUrl(locale);
@@ -67,12 +84,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(userData);
     } catch (err) {
       if (err instanceof ApiRequestError && err.status === 401) {
-        clearTokens();
-        setUser(null);
+        redirectToLogin();
       }
       throw err;
     }
-  }, []);
+  }, [redirectToLogin]);
 
   return (
     <AuthContext.Provider

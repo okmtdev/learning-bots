@@ -1,5 +1,5 @@
 import { API_BASE_URL } from "./constants";
-import { getIdToken } from "./auth";
+import { getIdToken, getIdTokenWithRefresh } from "./auth";
 import type { ApiError } from "@/types";
 
 class ApiClient {
@@ -13,9 +13,13 @@ class ApiClient {
     path: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const token = getIdToken();
+    // Try sync first, then attempt refresh if expired
+    let token = getIdToken();
     if (!token && !path.startsWith("/webhooks")) {
-      throw new Error("Not authenticated");
+      token = await getIdTokenWithRefresh();
+      if (!token) {
+        throw new ApiRequestError(401, "UNAUTHORIZED", "Not authenticated");
+      }
     }
 
     const response = await fetch(`${this.baseUrl}${path}`, {
