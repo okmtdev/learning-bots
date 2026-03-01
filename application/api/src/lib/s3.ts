@@ -8,7 +8,7 @@ import { getSignedUrl } from "@aws-sdk/cloudfront-signer";
 
 const s3 = new S3Client({ region: process.env.AWS_REGION || "ap-northeast-1" });
 
-const RECORDINGS_BUCKET = process.env.RECORDINGS_BUCKET || "colon-recordings";
+const RECORDINGS_BUCKET = process.env.RECORDINGS_BUCKET_NAME || "colon-recordings";
 const CLOUDFRONT_DOMAIN = process.env.CLOUDFRONT_DOMAIN || "";
 const CLOUDFRONT_KEY_PAIR_ID = process.env.CLOUDFRONT_KEY_PAIR_ID || "";
 const CLOUDFRONT_PRIVATE_KEY = process.env.CLOUDFRONT_PRIVATE_KEY || "";
