@@ -61,6 +61,21 @@ export interface Recording {
   createdAt: string;
 }
 
+// Meeting Event types
+export type MeetingEventType = "transcription" | "reaction" | "comment";
+
+export interface MeetingEvent {
+  sessionId: string;
+  eventId: string;
+  eventType: MeetingEventType;
+  speakerName: string;
+  content: string;
+  timestamp: string;
+  language?: string;
+  isFinal?: boolean;
+  createdAt: string;
+}
+
 // Settings types
 export interface Settings {
   language: "ja" | "en";

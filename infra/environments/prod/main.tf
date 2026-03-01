@@ -105,8 +105,10 @@ module "api" {
   bot_sessions_table_arn  = module.database.bot_sessions_table_arn
   bot_sessions_gsi_arn    = module.database.bot_sessions_gsi_arn
   bot_sessions_table_name = module.database.bot_sessions_table_name
-  recordings_bucket_arn   = module.storage.recordings_bucket_arn
-  recordings_bucket_name  = module.storage.recordings_bucket_name
+  recordings_bucket_arn     = module.storage.recordings_bucket_arn
+  recordings_bucket_name    = module.storage.recordings_bucket_name
+  meeting_events_table_arn  = module.database.meeting_events_table_arn
+  meeting_events_table_name = module.database.meeting_events_table_name
 }
 
 # -----------------------------------------------------------------------------

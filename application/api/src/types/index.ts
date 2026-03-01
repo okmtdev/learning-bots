@@ -72,6 +72,23 @@ export interface BotSession {
   ttl?: number;
 }
 
+// Meeting Event types
+export type MeetingEventType = "transcription" | "reaction" | "comment";
+
+export interface MeetingEvent {
+  sessionId: string;
+  eventId: string;
+  userId: string;
+  botId: string;
+  eventType: MeetingEventType;
+  speakerName: string;
+  content: string;
+  timestamp: string;
+  language?: string;
+  isFinal?: boolean;
+  createdAt: string;
+}
+
 // API Response types
 export interface ApiError {
   error: {
